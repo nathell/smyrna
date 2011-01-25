@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+  <meta charset="utf-8">
+  <title>Smyrna</title>
+  <link rel="stylesheet" type="text/css" href="smyrna.css">
+  <script type="text/javascript" src="jquery.js"></script>
+  <script type="text/javascript" src="json2.js"></script>
+  <script type="text/javascript" src="jsonrpc.js"></script>
+  <script type="text/javascript" src="jquery.scrollTo-1.4.2-min.js"></script>
+  <script type="text/javascript" src="underscore-min.js"></script>
+  <script type="text/javascript" src="backbone-min.js"></script>
+  <script type="text/javascript" src="smyrna.js"></script>
+  <body>
+    <table class="outer">
+      <tr class="upper">
+        <td>
+          <table id="qcontainer">
+            <tr><td colspan="3">
+                <form autocomplete="off">
+                  <input type="text" id="q">
+                </form>
+            </td></tr>
+            <tr>
+              <td style="text-align: left;">
+                <button id="pprev">↞</button>
+                <button id="prev">←</button>
+              </td>
+              <td id="info"></td>
+              <td style="text-align: right;">
+                <button id="next">→</button>
+                <button id="pnext">↠</button>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+      <tr class="lower">
+        <td>
+          <iframe id="output" height="100%"></iframe>
+        </td>
+      </tr>
+  </body>
+</html>

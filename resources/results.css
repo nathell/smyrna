@@ -1,0 +1,8 @@
+.smyrna-match {
+    background-color: #ff0;
+}
+
+.highlighted-match {
+    font-size: 150%;
+    border: 2px solid black;
+}

@@ -2,13 +2,22 @@
   (:use clojure.test
         [clojure.set :only [union]])
   (:require [smyrna.morf :as morf]
+            [clojure.string :as string]
             [pl.danieljanus.tagsoup :as tagsoup]))
 
 (defn create-inverted-index [freqs]
   (apply merge-with union (map #(zipmap (keys %1) (repeat #{%2})) freqs (iterate inc 0))))
 
+(defn remove-scripts [node]
+  (if (vector? node)
+    (vec (map remove-scripts (filter #(not (and (vector? %) (= (tagsoup/tag %) :script))) node)))
+    node))
+
+(defn strings [node]
+  (->> node remove-scripts flatten (filter string?)))
+
 (defn index-fileset [fileset]
-  (let [documents (map slurp fileset)
+  (let [documents (map #(->> % tagsoup/parse strings (string/join " ")) fileset)
         lemma-frequencies (vec (map morf/lemma-frequencies documents))
         word-frequencies (vec (map morf/word-frequencies documents))]
     {:files (vec fileset)
@@ -25,11 +34,6 @@
                              substrings (map (fn [[start end]] (.substring node start end)) (map first (partition 1 2 (partition 2 1 (concat (apply concat [0] (map rest filtered)) [len])))))
                              spans (map (fn [[_ start end]] [:span {:class "smyrna-match"} (.substring node start end)]) filtered)]
                          (remove #(= % "") (interleave substrings (concat spans [""]))))))
-
-(defn remove-scripts [node]
-  (if (vector? node)
-    (vec (map remove-scripts (filter #(not (and (vector? %) (= (tagsoup/tag %) :script))) node)))
-    node))
 
 (defn highlight [node query]
   (first (highlight-query (remove-scripts node) query)))
