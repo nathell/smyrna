@@ -1,8 +1,10 @@
 # JSON-RPC
 
+makeURL = (x) -> document.location.protocol + '//' + document.location.host + "/" + x
+
 smyrnaCall = (method, params, callback) ->
   $.jsonRpc
-    url: document.location.href + "json-rpc"
+    url: makeURL "json-rpc"
     type: "POST"
     method: method
     params: params
@@ -22,24 +24,24 @@ window.matchBody = matchBody
 Concordance = Backbone.Model.extend
   sset: (m) -> this.set m, silent: true
   nextMatch: ->
-    current = this.get 'selectedMatch'    
+    current = this.get 'selectedMatch'
     next = if current? and current + 1 < matches().length then current + 1 else 0
     this.set selectedMatch: next
   prevMatch: ->
-    current = this.get 'selectedMatch'    
+    current = this.get 'selectedMatch'
     next = if matches().length == 0 then null else
            if current > 0 then current - 1 else matches().length - 1
     this.set selectedMatch: next
   nextDocument: ->
     current = this.get 'selectedDocument'
     num = this.get 'numDocuments'
-    next = if num == 0 then 0 else 
+    next = if num == 0 then 0 else
            if current == num - 1 then 0 else current + 1
     this.set selectedDocument: next
   prevDocument: ->
     current = this.get 'selectedDocument'
     num = this.get 'numDocuments'
-    next = if num == 0 then 0 else 
+    next = if num == 0 then 0 else
            if current == 0 then num - 1 else current - 1
     this.set selectedDocument: next
 
@@ -76,7 +78,7 @@ show = (content) ->
   concordance.set numDocuments: content.count
   link = matchWindow().get(0).document.createElement('link')
   $(link).attr
-    href: document.location.href + 'results.css'
+    href: makeURL 'results.css'
     rel: 'stylesheet'
     type: 'text/css'
   matchBody().append(link)
@@ -88,15 +90,32 @@ show = (content) ->
   matchBody().find('a').click(() -> false)
 
 resizeFrame = () ->
-  $('#output').height($('.lower td').height())
+  $('#content').height($(window).height() - 41)
+  $('#output').height($('.lower td').height() - 1)
+
+showTab = (tab) ->
+  tab = tab.toLowerCase()
+  $('#content').children().hide()
+  $('#' + tab).show()
+  if tab == 'konkordancje'
+    $('#q').focus()
+    resizeFrame()
+
+initMenu = ->
+  $('.nav li').each((k, v) -> $(v).html('<a href="#">' + $(v).text() + '</a>'))
+  $('.nav .about').click(-> alert 'Smyrna!')
+  $('.nav .tab').click((x) -> showTab $(this).text())
+  showTab 'korpusy'
 
 $(() ->
-  $('#q').val('').focus().keyup(-> concordance.set query: $(this).val())
+  $('#q').val('').keyup(-> concordance.set query: $(this).val())
   $('window').resize(resizeFrame)
   $('#next').click(-> concordance.nextMatch())
   $('#prev').click(-> concordance.prevMatch())
   $('#pnext').click(-> concordance.nextDocument())
   $('#pprev').click(-> concordance.prevDocument())
+  $('#content').children().hide()
   resizeFrame()
   setInfo()
+  initMenu()
 )

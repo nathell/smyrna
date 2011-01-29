@@ -19,10 +19,10 @@
 (def srv (atom nil))
 
 (defn handler [req]
-  (if (= (:uri req) "/")
-    (response/resource-response "index.html")
-    (or (response/resource-response (:uri req))
-        (process-json-rpc req))))
+  (condp = (:uri req)
+    "/" (response/resource-response "index.html")
+    "/json-rpc" (process-json-rpc req)
+    (response/resource-response (:uri req))))
 
 (defn start-server []
   (when-not @srv

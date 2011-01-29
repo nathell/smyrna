@@ -11,33 +11,54 @@
   <script type="text/javascript" src="backbone-min.js"></script>
   <script type="text/javascript" src="smyrna.js"></script>
   <body>
-    <table class="outer">
-      <tr class="upper">
-        <td>
-          <table id="qcontainer">
-            <tr><td colspan="3">
-                <form autocomplete="off">
-                  <input type="text" id="q">
-                </form>
-            </td></tr>
-            <tr>
-              <td style="text-align: left;">
-                <button id="pprev">↞</button>
-                <button id="prev">←</button>
-              </td>
-              <td id="info"></td>
-              <td style="text-align: right;">
-                <button id="next">→</button>
-                <button id="pnext">↠</button>
-              </td>
-            </tr>
-          </table>
-        </td>
-      </tr>
-      <tr class="lower">
-        <td>
-          <iframe id="output" height="100%"></iframe>
-        </td>
-      </tr>
+  <ul class="nav">
+    <li class="tab">Korpusy</li>
+    <li class="tab">Konkordancje</li>
+    <li class="tab">Frekwencja</li>
+    <li class="tab">Kolokacje</li>
+    <li class="about">Smyrna</li>
+  </ul>
+  <div id="content">
+    <div id="korpusy">
+      Tworzenia korpusów jeszcze nie ma.
+    </div>
+    <div id="konkordancje">
+      <table class="outer">
+        <tr class="upper">
+          <td>
+            <table id="qcontainer">
+              <tr><td colspan="3">
+                  <form autocomplete="off">
+                    <input type="text" id="q">
+                  </form>
+              </td></tr>
+              <tr>
+                <td style="text-align: left;">
+                  <button id="pprev">↞</button>
+                  <button id="prev">←</button>
+                </td>
+                <td id="info"></td>
+                <td style="text-align: right;">
+                  <button id="next">→</button>
+                  <button id="pnext">↠</button>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        <tr class="lower">
+          <td>
+            <iframe id="output" height="100%"></iframe>
+          </td>
+        </tr>
+      </table>
+    </div>
+    <div id="frekwencja">
+      List frekwencyjnych jeszcze nie ma.
+    </div>
+    <div id="kolokacje">
+      Kolokacji jeszcze nie ma.
+    </div>
+  </div>
   </body>
 </html>
