@@ -95,6 +95,8 @@ resizeFrame = () ->
 
 showTab = (tab) ->
   tab = tab.toLowerCase()
+  $('.nav li').removeClass 'selected'
+  $('#mi-' + tab).addClass 'selected'
   $('#content').children().hide()
   $('#' + tab).show()
   if tab == 'konkordancje'
@@ -102,9 +104,10 @@ showTab = (tab) ->
     resizeFrame()
 
 initMenu = ->
-  $('.nav li').each((k, v) -> $(v).html('<a href="#">' + $(v).text() + '</a>'))
+  $('.nav li').each((k, v) -> $(v).attr(id: 'mi-' + $(v).text().toLowerCase()).html('<a href="#">' + $(v).text() + '</a>'))
   $('.nav .about').click(-> $('#about-modal').reveal())
   $('.nav .tab').click(-> showTab $(this).text())
+  $('#dupa').fileTree {acceptDirs: true, script: makeURL 'dir'}, (f) -> alert f    
   showTab 'korpusy'
 
 $(() ->

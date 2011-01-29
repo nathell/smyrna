@@ -7,17 +7,33 @@ html, body {
 body {
     position: relative;
     overflow: hidden;
+    font: 12pt Arial, Helvetica;
+}
+
+button {
+    font: 12pt Arial, Helvetica;
+}
+
+.button-row {
+    text-align: center;
+    width: 100%;
+}
+
+h1 {
+    text-align: center;
 }
 
 #about-modal h1 {
-    text-align: center;
+    font-weight: bold;
+    font-style: italic;
+    font-family: Times New Roman, Times;
 }
 
 .nav {
     margin: 0;
     padding: 0;
     background: #ccc;
-    font: bold 14pt Arial;
+    font: 14pt Arial;
     color: #333;
     height: 40px;
     border-bottom: 1px solid black;
@@ -29,6 +45,8 @@ body {
     margin: 0;
     padding: 0 10px;
     line-height: 40px;
+    border-left: 1px solid #ccc;
+    border-right: 1px solid #ccc;
 }
 
 .nav li a {
@@ -44,8 +62,14 @@ body {
 }
 
 .nav li:hover {
-    background: #333;
+    background: #333 !important;
     color: white;
+}
+
+.nav li.selected {
+    background: #edc;
+    border-left: 1px solid black;
+    border-right: 1px solid black;
 }
 
 #content {
@@ -53,10 +77,6 @@ body {
     top: 41px;
     width: 100%;
     overflow-y: auto;
-}
-
-#main-menu-items {
-    display: none;
 }
 
 /* ----- */
@@ -68,6 +88,10 @@ body {
     display: block;
     margin: 0 auto;
     border: none;
+}
+
+#korpusy {
+    padding: 0 1em;
 }
 
 #konkordancje {

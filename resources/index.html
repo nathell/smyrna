@@ -3,12 +3,14 @@
   <meta charset="utf-8">
   <title>Smyrna</title>
   <link rel="stylesheet" type="text/css" href="reveal.css">
+  <link rel="stylesheet" type="text/css" href="jqueryFileTree.css">
   <link rel="stylesheet" type="text/css" href="smyrna.css">
   <script type="text/javascript" src="jquery.js"></script>
   <script type="text/javascript" src="json2.js"></script>
   <script type="text/javascript" src="jsonrpc.js"></script>
   <script type="text/javascript" src="jquery.scrollTo-1.4.2-min.js"></script>
   <script type="text/javascript" src="jquery.reveal.js"></script>
+  <script type="text/javascript" src="jqueryFileTree.js"></script>
   <script type="text/javascript" src="underscore-min.js"></script>
   <script type="text/javascript" src="backbone-min.js"></script>
   <script type="text/javascript" src="smyrna.js"></script>
@@ -20,15 +22,24 @@
     <li class="tab">Kolokacje</li>
     <li class="about">Smyrna</li>
   </ul>
+  <!-- Dialogi -->
   <div id="about-modal" class="reveal-modal">
     <h1>Smyrna</h1>
     <p>Prosty konkordancer dla języka polskiego</p>
-    <p>Copyright &copy; 2010&ndash;2011 <a href="http://danieljanus.pl">Daniel Janus</a></p>
+    <p>Copyright &copy; 2010&ndash;2011 <a target="_blank" href="http://danieljanus.pl">Daniel Janus</a></p>
     <a class="close-reveal-modal">&#215;</a>
   </div>
   <div id="content">
     <div id="korpusy">
-      Tworzenia korpusów jeszcze nie ma.
+      <p>Aby rozpocząć pracę ze Smyrną, trzeba stworzyć korpus. W tym
+        celu należy wybrać katalog na dysku, zawierający dokumenty w
+        formacie HTML.</p>
+      <h1>Lista korpusów</h1>
+      <ul id="corpora"></ul>
+      <div class="button-row">
+        <button id="add-corpus">Stwórz nowy korpus</button>
+      </div>
+      <div id="dupa"></div>
     </div>
     <div id="konkordancje">
       <table class="outer">
