@@ -103,8 +103,8 @@ showTab = (tab) ->
 
 initMenu = ->
   $('.nav li').each((k, v) -> $(v).html('<a href="#">' + $(v).text() + '</a>'))
-  $('.nav .about').click(-> alert 'Smyrna!')
-  $('.nav .tab').click((x) -> showTab $(this).text())
+  $('.nav .about').click(-> $('#about-modal').reveal())
+  $('.nav .tab').click(-> showTab $(this).text())
   showTab 'korpusy'
 
 $(() ->
