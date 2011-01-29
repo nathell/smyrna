@@ -1,5 +1,6 @@
-(defproject smyrna "1.0.0-SNAPSHOT"
+(defproject smyrna "0.1"
   :description "FIXME: write"
+  :main smyrna.main
   :dependencies [[org.clojure/clojure "1.2.0"]
                  [org.clojure/clojure-contrib "1.2.0"]
                  [org.clojars.nathell/morfologik-stemming "1.4.0-cidict1.6"]
