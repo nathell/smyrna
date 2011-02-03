@@ -50,6 +50,7 @@ window.concordance = new Concordance
   numDocuments: 0
   query: ""
   corpora: null
+  currentCorpus: null
   newCorpusDialogState: true # true: dialog proper, false: progress bar
 
 concordance.bind 'change:selectedMatch', (model, i) ->
@@ -75,7 +76,6 @@ concordance.bind 'change:newCorpusDialogState', (model, d) ->
     $('#new-corpus-modal .wait').show()
 
 concordance.bind 'change:corpora', (model, corpora) ->
-  console.log corpora
   if corpora.length == 0
     res = '<p>Brak zdefiniowanych korpusów.</p>'
   else
@@ -84,7 +84,17 @@ concordance.bind 'change:corpora', (model, corpora) ->
     res += '<tr><th>Nazwa korpusu</th><th>Liczba dokumentów</th></tr>'
     res += _.map(corpora, (x) -> '<tr><td>' + x.name + '</td><td>' + x.files + '</td></tr>').join ''
     res += '</table>'
+  $('#current-corpus').empty()
+  _.each corpora, (corpus) ->
+    $('#current-corpus').append $('<option></option>').val(corpus.name).text(corpus.name)
+  if corpora.length == 0
+    $('#current-corpus').append $('<option>[brak korpusu]</option>')
+  if model.get('currentCorpus') == null and corpora.length > 0
+    model.set currentCorpus: corpora[0].name
   $('#corpora').html res
+
+concordance.bind 'change:currentCorpus', (model, corpus) ->
+  refreshQuery()
 
 # Rest
 
@@ -92,7 +102,7 @@ setInfo = (info) ->
   info = 'Wpisz formę podstawową słowa, które chcesz wyszukać' if not info
   $('#info').html(info)
 
-refreshQuery = -> smyrnaCall 'highlight', [concordance.get('query'), concordance.get('selectedDocument')], show
+refreshQuery = -> smyrnaCall 'highlight', [concordance.get('currentCorpus'), concordance.get('query'), concordance.get('selectedDocument')], show
 
 show = (content) ->
   matchBody().html content.html
@@ -142,7 +152,7 @@ $ ->
   $('#content').children().hide()
   resizeFrame()
   setInfo()
-  $('.nav li').each((k, v) -> $(v).attr(id: 'mi-' + $(v).text().toLowerCase()).html('<a href="#">' + $(v).text() + '</a>'))
+  $('.nav li.item').each((k, v) -> $(v).attr(id: 'mi-' + $(v).text().toLowerCase()).html('<a href="#">' + $(v).text() + '</a>'))
   $('.nav .about').click(-> $('#about-modal').reveal())
   $('.nav .tab').click(-> showTab $(this).text())
   $('.formtable td:first').width $('.formtable span').width() + 10
@@ -153,6 +163,8 @@ $ ->
   $('#add-corpus').click ->
     $('#create-corpus').attr 'disabled', 'disabled'
     $('#new-corpus-modal').reveal()
+  $('#current-corpus').change ->
+    concordance.set currentCorpus: $(this).val()
   $('#create-corpus').click ->
     concordance.set newCorpusDialogState: false
     smyrnaCall 'add-corpus', [$('#corpus-name').val(), $('#chosen-dir').text()], (x) ->

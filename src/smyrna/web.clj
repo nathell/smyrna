@@ -12,10 +12,11 @@
 
 (def state (atom {}))
 
-(defn-json-rpc highlight [q & [doc-nr]]
-  (let [docs (-> @state :lemma-index (get q) sort vec)
+(defn-json-rpc highlight [corpus q & [doc-nr]]
+  (let [index (-> @state (get corpus) :index)
+	docs (-> index :lemma-index (get q) sort vec)
         doc (get docs (or doc-nr 0))
-        file (when doc (-> @state :files (get doc)))]
+        file (when doc (-> index :files (get doc)))]
     {:count (count docs),
      :html (when file
              (html (core/highlight (tagsoup/parse file) q)))}))

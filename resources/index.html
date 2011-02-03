@@ -16,11 +16,12 @@
   <script type="text/javascript" src="smyrna.js"></script>
   <body>
   <ul class="nav">
-    <li class="tab">Korpusy</li>
-    <li class="tab">Konkordancje</li>
-    <li class="tab">Frekwencja</li>
-    <li class="tab">Kolokacje</li>
-    <li class="about">Smyrna</li>
+    <li class="about item">Smyrna</li>
+    <li class="tab item">Korpusy</li>
+    <li class="tab item">Konkordancje</li>
+    <li class="tab item">Frekwencja</li>
+    <li class="tab item">Kolokacje</li>
+    <li class="right"><select id="current-corpus"></select></li>
   </ul>
   <!-- Dialogi -->
   <div id="new-corpus-modal" class="reveal-modal">
@@ -39,7 +40,7 @@
       </div>
     </div>
     <div class="wait">
-      <p>Indeksowanie korpusu, proszę czekać...</p>
+      <p>Indeksowanie korpusu, proszę czekać (może potrwać długo)...</p>
       <img src="ajax-loader.gif">
     </div>
   </div>

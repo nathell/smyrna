@@ -54,14 +54,17 @@ h1 {
     color: inherit;
 }
 
-.nav .about {
+.nav .right {
     float: right;
+}
+
+.nav .about {
     font-weight: bold;
     font-style: italic;
     font-family: Times New Roman, Times;
 }
 
-.nav li:hover {
+.nav li.item:hover {
     background: #333 !important;
     color: white;
 }
@@ -70,6 +73,11 @@ h1 {
     background: #edc;
     border-left: 1px solid black;
     border-right: 1px solid black;
+}
+
+#current-corpus {
+    font: 12pt Arial;
+    padding: 0.2em 0.5em;
 }
 
 #content {
