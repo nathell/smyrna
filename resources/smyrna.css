@@ -144,3 +144,50 @@ h1 {
     margin: 0;
     padding: 0;
 }
+
+#dir-selector {
+    margin: 10px 0;
+    height: 250px;
+    overflow-y: auto;
+}
+
+#new-corpus-modal {
+    top: 50px;
+}
+
+#new-corpus-modal h1 {
+    font-size: 12pt;
+    margin-top: -20px;
+}
+
+#new-corpus-modal .wait {
+    display: none;
+    text-align: center;
+}
+
+#corpora table {
+    border: 1px solid black;
+    border-collapse: collapse;
+    margin: 0 auto 1em auto;
+}
+
+#corpora table tr td, #corpora table tr th {
+    text-align: center;
+    padding: .2em 1em;
+}
+
+#corpora table tr th {
+    background: #ddd;
+}
+
+#corpora p {
+    text-align: center;
+}
+
+.formtable {
+    width: 100%;
+}
+
+.formtable td input {
+    width: 100%;
+}

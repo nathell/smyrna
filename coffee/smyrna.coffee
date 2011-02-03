@@ -1,8 +1,9 @@
+# -*- tab-width: 2; -*-
 # JSON-RPC
 
 makeURL = (x) -> document.location.protocol + '//' + document.location.host + "/" + x
 
-smyrnaCall = (method, params, callback) ->
+window.smyrnaCall = (method, params, callback) ->
   $.jsonRpc
     url: makeURL "json-rpc"
     type: "POST"
@@ -16,8 +17,6 @@ smyrnaCall = (method, params, callback) ->
 matchWindow = -> $($('#output').get(0).contentWindow)
 matchBody = -> $(matchWindow().get(0).document.body)
 matches = -> matchBody().find('.smyrna-match')
-window.matches = matches
-window.matchBody = matchBody
 
 # Models
 
@@ -50,6 +49,8 @@ window.concordance = new Concordance
   selectedDocument: 0
   numDocuments: 0
   query: ""
+  corpora: null
+  newCorpusDialogState: true # true: dialog proper, false: progress bar
 
 concordance.bind 'change:selectedMatch', (model, i) ->
   matchBody().find('.highlighted-match').removeClass('highlighted-match')
@@ -64,6 +65,26 @@ concordance.bind 'change:selectedDocument', (model, document) ->
 concordance.bind 'change:query', (model, query) ->
   model.sset selectedDocument: 0, selectedMatch: null
   refreshQuery()
+
+concordance.bind 'change:newCorpusDialogState', (model, d) ->
+  if d
+    $('#new-corpus-modal .prompt').show()
+    $('#new-corpus-modal .wait').hide()
+  else
+    $('#new-corpus-modal .prompt').hide()
+    $('#new-corpus-modal .wait').show()
+
+concordance.bind 'change:corpora', (model, corpora) ->
+  console.log corpora
+  if corpora.length == 0
+    res = '<p>Brak zdefiniowanych korpusów.</p>'
+  else
+    res = '<p>Kliknięcie w nazwę korpusu spowoduje wybranie go do przeszukiwania.</p>'
+    res += '<table>'
+    res += '<tr><th>Nazwa korpusu</th><th>Liczba dokumentów</th></tr>'
+    res += _.map(corpora, (x) -> '<tr><td>' + x.name + '</td><td>' + x.files + '</td></tr>').join ''
+    res += '</table>'
+  $('#corpora').html res
 
 # Rest
 
@@ -103,14 +124,15 @@ showTab = (tab) ->
     $('#q').focus()
     resizeFrame()
 
-initMenu = ->
-  $('.nav li').each((k, v) -> $(v).attr(id: 'mi-' + $(v).text().toLowerCase()).html('<a href="#">' + $(v).text() + '</a>'))
-  $('.nav .about').click(-> $('#about-modal').reveal())
-  $('.nav .tab').click(-> showTab $(this).text())
-  $('#dupa').fileTree {acceptDirs: true, script: makeURL 'dir'}, (f) -> alert f    
-  showTab 'korpusy'
+getName = (f) ->
+  f = f.substring 0, f.length - 1
+  f = f.split('/')
+  f[f.length - 1]
 
-$(() ->
+window.updateCorporaList = () ->
+  smyrnaCall 'get-corpora', [], (corpora) -> concordance.set corpora: corpora
+
+$ ->
   $('#q').val('').keyup(-> concordance.set query: $(this).val())
   $('window').resize(resizeFrame)
   $('#next').click(-> concordance.nextMatch())
@@ -120,5 +142,25 @@ $(() ->
   $('#content').children().hide()
   resizeFrame()
   setInfo()
-  initMenu()
-)
+  $('.nav li').each((k, v) -> $(v).attr(id: 'mi-' + $(v).text().toLowerCase()).html('<a href="#">' + $(v).text() + '</a>'))
+  $('.nav .about').click(-> $('#about-modal').reveal())
+  $('.nav .tab').click(-> showTab $(this).text())
+  $('.formtable td:first').width $('.formtable span').width() + 10
+  $('#dir-selector').fileTree {acceptDirs: true, script: makeURL 'dir'}, (f) ->
+    $('#chosen-dir').text f
+    $('#corpus-name').val getName f
+    $('#create-corpus').removeAttr 'disabled'
+  $('#add-corpus').click ->
+    $('#create-corpus').attr 'disabled', 'disabled'
+    $('#new-corpus-modal').reveal()
+  $('#create-corpus').click ->
+    concordance.set newCorpusDialogState: false
+    smyrnaCall 'add-corpus', [$('#corpus-name').val(), $('#chosen-dir').text()], (x) ->
+      concordance.set newCorpusDialogState: true
+      if typeof x == 'string'
+        alert x
+      else
+        $('.reveal-modal-bg').trigger 'click.modalEvent'
+        updateCorporaList()
+  updateCorporaList()
+  showTab 'korpusy'
