@@ -24,10 +24,10 @@
         cnt (count bases)]
     (if (zero? cnt)
       {word 1}
-      (zipmap bases (repeat (/ 1 cnt))))))
+      (zipmap bases (repeat 1)))))
 
 (defn word-matches? [lemma word]
-  (some (set (map :base (analyze word))) [lemma]))
+  (some (set (keys (lemmatize word))) [lemma]))
 
 (deftest test-morf
   (is (word-matches? "chleb" "chlebami"))
