@@ -94,7 +94,7 @@ concordance.bind 'change:corpora', (model, corpora) ->
     res = '<p>Kliknięcie w nazwę korpusu spowoduje wybranie go do przeszukiwania.</p>'
     res += '<table>'
     res += '<tr><th>Nazwa korpusu</th><th>Liczba dokumentów</th></tr>'
-    res += _.map(corpora, (x) -> '<tr><td>' + x.name + '</td><td>' + x.files + '</td></tr>').join ''
+    res += _.map(corpora, (x) -> '<tr><td><a href="#">' + x.name + '</a></td><td>' + x.files + '</td></tr>').join ''
     res += '</table>'
   $('#current-corpus').empty()
   _.each corpora, (corpus) ->
@@ -104,8 +104,12 @@ concordance.bind 'change:corpora', (model, corpora) ->
   if model.get('currentCorpus') == null and corpora.length > 0
     model.set currentCorpus: corpora[0].name
   $('#corpora').html res
+  $('#corpora a').click (x) ->
+    model.set currentCorpus: $(this).text()
+    showTab 'konkordancje'
 
 concordance.bind 'change:currentCorpus', (model, corpus) ->
+  $('#current-corpus').val corpus
   refreshQuery()
 
 # Rest
