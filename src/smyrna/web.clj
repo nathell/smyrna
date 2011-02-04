@@ -47,14 +47,14 @@
 
 (defn directory [req]
   (let [dir ((:form-params req) "dir")
-        f (file dir)
-        [dirs files] (map (partial sort-by #(.getName %)) (separate #(.isDirectory %) (.listFiles f)))
+	dirs (if (empty? dir)
+	       (java.io.File/listRoots)
+	       (sort-by #(.getName %) (filter #(.isDirectory %) (.listFiles (file dir)))))	
         result 
           (apply str
                  (flatten
                   ["<ul class='jqueryFileTree' style='display: none;'>"
-                   (map #(format "<li class='directory collapsed'><a href='#' rel='%s/'>%s</a></li>" (str %) (.getName %)) dirs)
-                   #_ (map #(format "<li class='file ext_%s'><a href='#' rel='%s'>%s</a></li>" (extension %) (str %) (.getName %)) files)
+                   (map #(format "<li class='directory collapsed'><a href='#' rel='%s/'>%s</a></li>" (str %) (if (empty? dir) (str %) (.getName %))) dirs)
                    "</ul>"]))]
     {:status 200,
      :headers {"Content-Type" "text/html; charset=utf-8"},

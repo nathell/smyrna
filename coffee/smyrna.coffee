@@ -136,13 +136,22 @@ showTab = (tab) ->
 
 getName = (f) ->
   f = f.substring 0, f.length - 1
-  f = f.split('/')
+  f = f.split /[\\\/]/
   f[f.length - 1]
 
 window.updateCorporaList = () ->
   smyrnaCall 'get-corpora', [], (corpora) -> concordance.set corpora: corpora
 
 $ ->
+  if $.browser.msie and $.browser.version.match /^[67]/
+    $('body').empty().append $ '<div style="padding: 1em">
+<h1>Używasz przestarzałej przeglądarki</h1>
+<p>Smyrna nie obsługuje przeglądarki Internet Explorer. Aby używać Smyrny, zainstaluj jedną z zalecanych przeglądarek:</p>
+<ul><li><a href="http://www.google.com/chrome/?hl=pl">Google Chrome</a></li>
+  <li><a href="http://firefox.pl">Firefox</a></li></ul>
+  <p><a href="http://browsehappy.pl">Dowiedz się więcej</a> o powodach, dla których warto zaktualizować przeglądarkę.</p>
+</div>'
+    return true
   $('#q').val('').keyup(-> concordance.set query: $(this).val())
   $('window').resize(resizeFrame)
   $('#next').click(-> concordance.nextMatch())
@@ -156,7 +165,7 @@ $ ->
   $('.nav .about').click(-> $('#about-modal').reveal())
   $('.nav .tab').click(-> showTab $(this).text())
   $('.formtable td:first').width $('.formtable span').width() + 10
-  $('#dir-selector').fileTree {acceptDirs: true, script: makeURL 'dir'}, (f) ->
+  $('#dir-selector').fileTree {acceptDirs: true, root: '', script: makeURL 'dir'}, (f) ->
     $('#chosen-dir').text f
     $('#corpus-name').val getName f
     $('#create-corpus').removeAttr 'disabled'
