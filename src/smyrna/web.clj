@@ -18,6 +18,7 @@
         doc (get docs (or doc-nr 0))
         file (when doc (-> index :files (get doc)))]
     {:count (count docs),
+     :numword (-> index :lemma-global-frequency (get q)),
      :html (when file
              (html (core/highlight (tagsoup/parse file) q)))}))
 

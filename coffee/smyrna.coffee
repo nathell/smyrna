@@ -1,4 +1,16 @@
 # -*- tab-width: 2; -*-
+
+# linguistic tools
+
+pluralize = (n, f1, f2, f3) ->
+  if n is 1
+    f1
+  else
+    if n % 10 in [2, 3, 4] and Math.floor((n % 100) / 10) isnt 1
+      f2
+    else
+      f3
+
 # JSON-RPC
 
 makeURL = (x) -> document.location.protocol + '//' + document.location.host + "/" + x
@@ -117,7 +129,10 @@ show = (content) ->
     if content.count == 0
       setInfo('Nie znaleziono dokumentów')
     else
-      setInfo('Znaleziono ' + content.count + ' dokumentów<br>' + matches().length + ' wyników w dokumencie ' + (1 + concordance.get 'selectedDocument'))
+      setInfo('Znaleziono ' + content.numword + ' ' +
+              pluralize(content.numword, 'wynik', 'wyniki', 'wyników') + ' w ' + content.count + ' ' +
+              pluralize(content.count, 'dokumencie', 'dokumentach', 'dokumentach') + '<br>' +
+              matches().length + ' ' + pluralize(matches().length, 'wynik', 'wyniki', 'wyników') + ' w dokumencie ' + (1 + concordance.get 'selectedDocument'))
   matchBody().find('a').click(() -> false)
 
 resizeFrame = () ->

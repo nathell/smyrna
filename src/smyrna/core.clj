@@ -23,6 +23,8 @@
     {:files (vec fileset)
      :lemma-frequencies lemma-frequencies
      :word-frequencies word-frequencies
+     :lemma-global-frequency (apply merge-with + lemma-frequencies)
+     :word-global-frequency (apply merge-with + word-frequencies)
      :lemma-index (create-inverted-index lemma-frequencies)
      :word-index (create-inverted-index word-frequencies)}))
 
