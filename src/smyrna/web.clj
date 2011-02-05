@@ -44,6 +44,10 @@
   (sort-by :name
            (map (fn [x] {:name x, :files ((@state x) :num-files)}) (keys @state))))
 
+(defn-json-rpc frequency-list [corpus]
+  (sort-by second >
+	   (into [] (map vec (-> @state (get corpus) :index :lemma-global-frequency)))))
+
 (def srv (atom nil))
 
 (defn directory [req]

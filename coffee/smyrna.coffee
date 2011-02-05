@@ -111,6 +111,32 @@ concordance.bind 'change:corpora', (model, corpora) ->
 concordance.bind 'change:currentCorpus', (model, corpus) ->
   $('#current-corpus').val corpus
   refreshQuery()
+  updateFrequencyList()
+
+updateFrequencyList = ->
+  smyrnaCall 'frequency-list', [concordance.get('currentCorpus')], (data) ->
+    mydata = _.map(data, (x) -> {lexeme: x[0], count: x[1]})
+    window.mygrid = new Slick.Grid '#freqtable',
+      mydata,
+      [{id: "clexeme", name: "Leksem", field: 'lexeme', width: 600, sortable: true},
+       {id: "ccount", name: "Liczba wystąpień", field: 'count', width: 180, sortable: true}],
+      {enableColumnReorder: false}
+    window.mygrid.onSort.subscribe (e, args) ->
+      compare = (a, b) ->
+        aa = a[args.sortCol.field]
+        bb = b[args.sortCol.field]
+        if aa > bb
+          1
+        else if aa < bb
+          -1
+        else
+          0
+      if args.sortAsc
+        mydata.sort(compare)
+      else
+        mydata.reverse(compare)
+      window.mygrid.invalidateAllRows()
+      window.mygrid.render()
 
 # Rest
 
@@ -145,6 +171,8 @@ resizeFrame = () ->
 
 showTab = (tab) ->
   tab = tab.toLowerCase()
+  if tab in ['konkordancje', 'frekwencja'] and concordance.get('currentCorpus') is null
+    return
   $('.nav li').removeClass 'selected'
   $('#mi-' + tab).addClass 'selected'
   $('#content').children().hide()
@@ -152,6 +180,8 @@ showTab = (tab) ->
   if tab == 'konkordancje'
     $('#q').focus()
     resizeFrame()
+  if tab == 'frekwencja'
+    updateFrequencyList()
 
 getName = (f) ->
   f = f.substring 0, f.length - 1

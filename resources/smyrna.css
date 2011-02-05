@@ -199,3 +199,15 @@ h1 {
 .formtable td input {
     width: 100%;
 }
+
+#frekwencja {
+    height: 100%;
+    overflow-y: hidden;
+}
+
+#freqtable {
+    width: 800px;
+    height: 90%;
+    margin: 1em auto 0 auto;
+    border: 1px solid black;
+}

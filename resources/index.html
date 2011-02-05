@@ -4,13 +4,18 @@
   <title>Smyrna</title>
   <link rel="stylesheet" type="text/css" href="reveal.css">
   <link rel="stylesheet" type="text/css" href="jqueryFileTree.css">
+  <link rel="stylesheet" type="text/css" href="slick.grid.css">
   <link rel="stylesheet" type="text/css" href="smyrna.css">
+  <link rel="stylesheet" type="text/css" href="jquery-ui-1.8.5.custom.css">
   <script type="text/javascript" src="jquery.js"></script>
   <script type="text/javascript" src="json2.js"></script>
   <script type="text/javascript" src="jsonrpc.js"></script>
   <script type="text/javascript" src="jquery.scrollTo-1.4.2-min.js"></script>
   <script type="text/javascript" src="jquery.reveal.js"></script>
   <script type="text/javascript" src="jqueryFileTree.js"></script>
+  <script type="text/javascript" src="jquery.event.drag-2.0.min.js"></script>
+  <script type="text/javascript" src="slick.core.js"></script>
+  <script type="text/javascript" src="slick.grid.js"></script>
   <script type="text/javascript" src="underscore-min.js"></script>
   <script type="text/javascript" src="backbone-min.js"></script>
   <script type="text/javascript" src="smyrna.js"></script>
@@ -20,7 +25,7 @@
     <li class="tab item">Korpusy</li>
     <li class="tab item">Konkordancje</li>
     <li class="tab item">Frekwencja</li>
-    <li class="tab item">Kolokacje</li>
+<!--    <li class="tab item">Kolokacje</li>-->
     <li class="right"><select id="current-corpus"></select></li>
   </ul>
   <!-- Dialogi -->
@@ -60,8 +65,8 @@
       <div id="corpora"></div>
       <div class="button-row">
         <button id="add-corpus">Stwórz nowy korpus</button>
-      </div>
-    </div>
+      </div> 
+   </div>
     <div id="konkordancje">
       <table class="outer">
         <tr class="upper">
@@ -94,11 +99,11 @@
       </table>
     </div>
     <div id="frekwencja">
-      List frekwencyjnych jeszcze nie ma.
+      <div id="freqtable"></div>
     </div>
-    <div id="kolokacje">
+<!--    <div id="kolokacje">
       Kolokacji jeszcze nie ma.
-    </div>
+    </div> -->
   </div>
   </body>
 </html>
