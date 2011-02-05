@@ -20,7 +20,7 @@
   (let [documents (map #(->> % tagsoup/parse strings (string/join " ")) fileset)
         lemma-frequencies (vec (map morf/lemma-frequencies documents))
         word-frequencies (vec (map morf/word-frequencies documents))]
-    {:files (vec fileset)
+    {:files (vec (map str fileset))
      :lemma-frequencies lemma-frequencies
      :word-frequencies word-frequencies
      :lemma-global-frequency (apply merge-with + lemma-frequencies)

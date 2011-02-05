@@ -3,7 +3,7 @@
         [ring.middleware.params :only [wrap-params]]
         [clojure.contrib.seq-utils :only [separate]]
         [hiccup.core :only [html]]
-        [clojure.java.io :only [file]])
+        [clojure.java.io :only [file writer reader]])
   (:require [smyrna.core :as core]
             [pl.danieljanus.tagsoup :as tagsoup]
             [ring.adapter.jetty :as jetty]
@@ -11,6 +11,22 @@
             [ring.util.response :as response]))
 
 (def state (atom {}))
+
+(defn write-to [file datum]
+  (with-open [stream (writer file)]
+    (binding [*out* stream]
+      (prn datum))))
+
+(defn read-from [file]
+  (with-open [stream (java.io.PushbackReader. (reader file))]
+    (read stream)))
+
+(def config-file (str (System/getProperty "user.home") java.io.File/separator ".smyrna.dat"))
+
+(defn try-to-load-state []
+  (try
+    (reset! state (read-from config-file))
+    (catch Exception _ nil)))
 
 (defn-json-rpc highlight [corpus q & [doc-nr]]
   (let [index (-> @state (get corpus) :index)
@@ -38,6 +54,7 @@
                  {:directory directory
                   :num-files (count files)
                   :index (core/index-fileset files)})
+	  (future (write-to config-file @state))
           true))))
 
 (defn-json-rpc get-corpora []

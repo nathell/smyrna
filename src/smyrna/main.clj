@@ -25,7 +25,8 @@
         (try-browsing "firefox "))))
 
 (defn -main [& args]
-  (try 
+  (try
+    (web/try-to-load-state)
     (web/start-server)
     (catch java.net.BindException _ nil))
   (browse-url "http://localhost:8080"))
