@@ -223,6 +223,8 @@ $ ->
     $('#new-corpus-modal').reveal()
   $('#current-corpus').change ->
     concordance.set currentCorpus: $(this).val()
+  $('#about-modal button').click ->
+    $('.close-reveal-modal').trigger 'click.modalEvent'
   $('#create-corpus').click ->
     concordance.set newCorpusDialogState: false
     smyrnaCall 'add-corpus', [$('#corpus-name').val(), $('#chosen-dir').text()], (x) ->

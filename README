@@ -1,17 +1,5 @@
-# smyrna
+Smyrna -- Prosty konkordancer dla języka polskiego
 
-FIXME: write description
+(C) 2010-2011 Daniel Janus, http://smyrna.danieljanus.pl
 
-## Usage
-
-FIXME: write
-
-## Installation
-
-FIXME: write
-
-## License
-
-Copyright (C) 2010 Daniel Janus
-
-Distributed under the Eclipse Public License, the same as Clojure.
+Licencja MIT (zob. plik resources/licenses/smyrna.txt).
