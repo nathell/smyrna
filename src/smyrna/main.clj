@@ -22,6 +22,7 @@
 	(try-browsing "rundll32 url.dll,FileProtocolHandler ")
         (try-browsing "chromium-browser --app=")
 	(try-browsing "x-www-browser ")
+	(try-browsing "open ")
         (try-browsing "firefox "))))
 
 (defn -main [& args]
