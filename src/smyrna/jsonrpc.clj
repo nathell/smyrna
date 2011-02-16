@@ -12,7 +12,7 @@
   `(when-not ~x
      (throw (Exception. ~msg))))
 
-(def *json-rpc-ns* (find-ns 'fablo.web))
+(def *json-rpc-ns* nil)
 
 (defn process-json-rpc [req]
   (let [{:keys [id method params]} (-> req :body io/slurp* json/read-json)
