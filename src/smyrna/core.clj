@@ -10,7 +10,7 @@
 
 (defn remove-scripts [node]
   (if (vector? node)
-    (vec (map remove-scripts (filter #(not (and (vector? %) (= (tagsoup/tag %) :script))) node)))
+    (vec (map remove-scripts (filter #(not (and (vector? %) (#{:script :style} (tagsoup/tag %)))) node)))
     node))
 
 (defn strings [node]
