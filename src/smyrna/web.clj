@@ -41,12 +41,12 @@
 (defn extension [f]
   (or (-> f .getName (string/split #"\.") next last) ""))
 
-(defn-json-rpc add-corpus [name directory]
+(defn-json-rpc add-corpus [name directory update?]
   (let [files (filter #(#{"html" "htm" "HTML" "HTM"} (extension %)) (file-seq (file directory)))]
     (cond
       (empty? files)
         "Wskazany katalog nie zawiera plików HTML."
-      (@state name)
+      (and (not update?) (@state name))
         "Istnieje już korpus o tej nazwie."
       true
         (do
@@ -64,6 +64,9 @@
 (defn-json-rpc frequency-list [corpus]
   (sort-by second >
 	   (into [] (map vec (-> @state (get corpus) :index :lemma-global-frequency)))))
+
+(defn-json-rpc update-corpus [corpus]
+  (add-corpus corpus (:directory (@state corpus)) true))
 
 (def srv (atom nil))
 

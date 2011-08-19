@@ -94,7 +94,7 @@ concordance.bind 'change:corpora', (model, corpora) ->
     res = '<p>Kliknięcie w nazwę korpusu spowoduje wybranie go do przeszukiwania.</p>'
     res += '<table>'
     res += '<tr><th>Nazwa korpusu</th><th>Liczba dokumentów</th></tr>'
-    res += _.map(corpora, (x) -> '<tr><td><a href="#">' + x.name + '</a></td><td>' + x.files + '</td></tr>').join ''
+    res += _.map(corpora, (x) -> '<tr><td><a href="#" class="select-corpus-link">' + x.name + '</a></td><td>' + x.files + ' (<a href="#" class="update-corpus-link">odśwież</a>)</td></tr>').join ''
     res += '</table>'
   $('#current-corpus').empty()
   _.each corpora, (corpus) ->
@@ -104,9 +104,16 @@ concordance.bind 'change:corpora', (model, corpora) ->
   if model.get('currentCorpus') == null and corpora.length > 0
     model.set currentCorpus: corpora[0].name
   $('#corpora').html res
-  $('#corpora a').click (x) ->
+  $('#corpora a.select-corpus-link').click (x) ->
     model.set currentCorpus: $(this).text()
     showTab 'konkordancje'
+  $('#corpora a.update-corpus-link').click (x) ->
+    concordance.set newCorpusDialogState: false
+    $('#new-corpus-modal').reveal()
+    smyrnaCall 'update-corpus', [$(this).parent().prev().find('a').text()], (x) ->
+      concordance.set newCorpusDialogState: true
+      $('.reveal-modal-bg').trigger 'click.modalEvent'
+      updateCorporaList()
 
 concordance.bind 'change:currentCorpus', (model, corpus) ->
   $('#current-corpus').val corpus
@@ -227,7 +234,7 @@ $ ->
     $('.close-reveal-modal').trigger 'click.modalEvent'
   $('#create-corpus').click ->
     concordance.set newCorpusDialogState: false
-    smyrnaCall 'add-corpus', [$('#corpus-name').val(), $('#chosen-dir').text()], (x) ->
+    smyrnaCall 'add-corpus', [$('#corpus-name').val(), $('#chosen-dir').text(), false], (x) ->
       concordance.set newCorpusDialogState: true
       if typeof x == 'string'
         alert x
