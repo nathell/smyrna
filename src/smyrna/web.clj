@@ -8,6 +8,7 @@
             [pl.danieljanus.tagsoup :as tagsoup]
             [ring.adapter.jetty :as jetty]
             [clojure.string :as string]
+            [clojure-csv.core :as csv]
             [ring.util.response :as response]))
 
 (def state (atom {}))
@@ -84,13 +85,21 @@
     {:status 200,
      :headers {"Content-Type" "text/html; charset=utf-8"},
      :body result}))
-     
+
+(defn download-frequency-list [req]
+  (let [corpus (-> req :uri (clojure.string/split #"/") (nth 2))]
+    {:status 200,
+     :headers {"Content-Type" "text/csv; charset=utf-8",
+               "Content-Disposition" (format "attachment; filename=\"lista-frekwencyjna-%s.csv\"" corpus)},
+     :body (csv/write-csv (for [[word count] (frequency-list corpus)] [word (str count)]))}))
+
 (defn handler [req]
-  (condp = (:uri req)
-    "/" (response/resource-response "index.html")
-    "/json-rpc" (process-json-rpc req)
-    "/dir" ((wrap-params directory) req)
-    (response/resource-response (:uri req))))
+  (cond 
+   (= (:uri req) "/") (response/resource-response "index.html")
+   (= (:uri req) "/json-rpc") (process-json-rpc req)
+   (= (:uri req) "/dir") ((wrap-params directory) req)
+   (.startsWith (:uri req) "/frequency-list") (download-frequency-list req)
+   true (response/resource-response (:uri req))))
 
 (defn start-server []
   (when-not @srv

@@ -117,6 +117,7 @@ concordance.bind 'change:corpora', (model, corpora) ->
 
 concordance.bind 'change:currentCorpus', (model, corpus) ->
   $('#current-corpus').val corpus
+  $('#download-freq-csv').attr('href', '/frequency-list/' + corpus)
   refreshQuery()
   updateFrequencyList()
 
