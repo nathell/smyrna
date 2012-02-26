@@ -1,7 +1,6 @@
 (ns smyrna.web
-  (:use [smyrna.jsonrpc :only [defn-json-rpc process-json-rpc]]
+  (:use [pl.danieljanus.jsonrpc :only [defn-json-rpc process-json-rpc]]
         [ring.middleware.params :only [wrap-params]]
-        [clojure.contrib.seq-utils :only [separate]]
         [hiccup.core :only [html]]
         [clojure.java.io :only [file writer reader]])
   (:require [smyrna.core :as core]

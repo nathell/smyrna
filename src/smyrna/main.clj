@@ -1,6 +1,6 @@
 (ns smyrna.main
   (:gen-class)
-  (:use [clojure.contrib.shell-out :only [sh]])
+  (:use [clojure.java.shell :only [sh]])
   (:require [smyrna.web :as web]))
 
 (defn chrome-dir []
