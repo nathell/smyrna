@@ -1,6 +1,12 @@
 (ns smyrna.fsa
+  (:refer-clojure :exclude [read])
   (:require [clojure.java.io :as io])
-  (:import [morfologik.fsa.builders FSABuilder CFSA2Serializer]))
+  (:import [morfologik.fsa FSA]
+           [morfologik.fsa.builders FSABuilder CFSA2Serializer]))
+
+(defn read
+  [input]
+  (FSA/read (io/input-stream input)))
 
 (defn build
   [words]

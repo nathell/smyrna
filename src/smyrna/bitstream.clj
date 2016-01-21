@@ -3,26 +3,45 @@
             [nio.core :as nio])
   (:import
    [java.io DataOutputStream]
-   [java.nio ByteBuffer LongBuffer]))
+   [java.nio ByteBuffer IntBuffer LongBuffer]))
 
 (definterface IBitSource
-  (^long nextBit []))
+  (^long nextBit [])
+  (^long position [])
+  (scroll [^long i]))
 
 (deftype LongBufferBitSource
     [^LongBuffer buffer ^{:volatile-mutable true, :tag long} current ^{:volatile-mutable true, :tag long} bit]
   smyrna.bitstream.IBitSource
   (nextBit [this]
-    (let [res (bit-shift-right (bit-and (.get buffer current) (bit-shift-left 1 bit)) bit)]
+    (let [res (bit-and (.get buffer current) (bit-shift-left 1 bit))]
       (if (= bit 0)
         (do
           (set! current (inc current))
           (set! bit 63))
         (set! bit (dec bit)))
-      res)))
+      (if (= res 0) 0 1)))
+  (position [this]
+    (+ (- 63 bit) (* 64 current)))
+  (scroll [this i]
+    (set! current (bit-shift-right i 6))
+    (set! bit (- 63 (bit-and i 63)))))
+
+(deftype VectorBitSource
+    [v ^{:volatile-mutable true, :tag long} i]
+  smyrna.bitstream.IBitSource
+  (nextBit [this]
+    (let [res (v i)]
+      (set! i (inc i))
+      res))
+  (position [this] i)
+  (scroll [this new-i] (set! i new-i)))
 
 (defn bit-source
   [buf]
-  (LongBufferBitSource. buf 0 63))
+  (if (vector? buf)
+    (VectorBitSource. buf 0)
+    (LongBufferBitSource. buf 0 63)))
 
 (definterface IBitSink
   (^long position [])
@@ -57,7 +76,3 @@
 (defn file-bit-sink
   [f]
   (FileBitSink. (DataOutputStream. (io/output-stream f)) 0 0))
-
-(with-open [bs (file-bit-sink "/tmp/test2")]
-  (.writeBinary bs 21978 30)
-  (.writeBinary bs 1928326 40))

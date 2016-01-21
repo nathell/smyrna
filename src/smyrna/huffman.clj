@@ -3,7 +3,8 @@
             [clojure.data.csv :as csv]
             [clojure.java.io :as io])
   (:import [java.util Arrays]
-           [smyrna.bitstream IBitSink]))
+           [java.nio IntBuffer]
+           [smyrna.bitstream IBitSink IBitSource]))
 
 (defn extendv
   ([v] (extendv v 64 0))
@@ -98,3 +99,18 @@
   ([s ^IBitSink out syms counts]
    (let [{:keys [codes lengths index]} (precompute-encoding syms counts)]
      (do-encode s out codes lengths index))))
+
+(defn int-buffer
+  [v]
+  (IntBuffer/wrap (into-array Integer/TYPE (map int v))))
+
+(defn decode-symbol
+  [^IBitSource bs ^IntBuffer numl ^IntBuffer first-code ^IntBuffer symbols]
+  (loop [n (.nextBit bs)
+         i 0
+         ofs 0]
+    (if (>= n (.get first-code i))
+      (.get symbols (+ ofs n (- (.get first-code i))))
+      (recur (+ n n (.nextBit bs))
+             (inc i)
+             (+ ofs (.get numl i))))))

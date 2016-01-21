@@ -13,7 +13,7 @@
     (.get b arr 0 size)
     arr))
 
-(defn has-more? 
+(defn has-more?
   ([^ByteBuffer b] (has-more? b 1))
   ([^ByteBuffer b ^long i]
    (<= (+ (.position b) i) (.limit b))))
