@@ -86,12 +86,16 @@
   (doseq [sym s :let [i (index sym)]]
     (.writeBinary out (codes i) (lengths i))))
 
+(defn enumerate
+  [seq]
+  (zipmap seq (range)))
+
 (defn precompute-encoding
   [syms counts]
   (let [lengths (code-lengths counts)]
     (assoc (canonical-code lengths)
       :lengths lengths
-      :index (zipmap syms (range)))))
+      :index (enumerate syms))))
 
 (defn encode
   ([s ^IBitSink out] (encode s out (frequencies s)))
