@@ -51,7 +51,7 @@
       (nio/set-byte-order! buf :big-endian)
       {:tokens (into (vec (apply concat dicts)) [:nospace :end]),
        :counts (zipmap dict-keys (map count dicts)),
-       :meta (read-meta (buffer-part buf (elems "meta.csv.gz")))
+       :meta #(buffer-part buf (elems "meta.edn.gz"))
        :image (long-subbuffer buf (elems "image"))
        :offset (int-subbuffer buf (elems "offset"))
        :numl (int-subbuffer buf (elems "numl"))
