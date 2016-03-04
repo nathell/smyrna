@@ -4,6 +4,10 @@ html, body {
     height: 100%;
 }
 
+#app, .nav-container {
+    height: 100%;
+}
+
 body {
     position: relative;
     overflow: hidden;

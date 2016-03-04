@@ -22,4 +22,4 @@
   (let [get-str (fn [^java.nio.ByteBuffer bb]
                   (let [o (.arrayOffset bb)]
                     (String. (.array bb) (+ o (.position bb)) (+ o (.remaining bb)))))]
-    (map get-str fsa)))
+    (mapv get-str fsa)))

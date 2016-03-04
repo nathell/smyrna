@@ -1,7 +1,13 @@
 (ns smyrna.handler
   (:require [hiccup.page :refer [include-js include-css html5]]
+            [hiccup.core :refer [html]]
             [smyrna.middleware :refer [wrap-middleware]]
+            [smyrna.corpus :as corpus]
+            [compojure.core :refer [GET defroutes]]
+            [clojure.java.io :as io]
             [environ.core :refer [env]]))
+
+(def corpus (corpus/open "p4corpus.zip"))
 
 (def loading-page
   (html5
@@ -15,13 +21,17 @@
       [:h1 "Loading Smyrna, please wait..."]]
      (include-js "js/app.js")]))
 
-(def not-found
-  (html5
-   [:h1 "Not found"]))
+(defroutes routes
+  (GET "/" [] loading-page)
+  (GET "/meta" [] {:status 200
+                   :headers {"Content-Type" "application/edn"
+                             "Content-Encoding" "gzip"}
+                   :body (io/input-stream ((:raw-meta-fn corpus)))})
+  (GET "/corpus/*" [*]
+       (let [k *
+             k (if (.endsWith k ".html")
+                 (subs k 0 (- (count k) (count ".html")))
+                 k)]
+         (html (corpus/deserialize (corpus/read-document corpus (corpus/locate-by-key (:meta corpus) k)))))))
 
-(defn main-handler [req]
-  (if (= (:uri req) "/")
-    {:status 200, :headers {"Content-Type" "text/html"}, :body loading-page}
-    {:status 404, :headers {"Content-Type" "text/html"}, :body not-found}))
-
-(def app (wrap-middleware #'main-handler))
+(def app (wrap-middleware #'routes))

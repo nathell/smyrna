@@ -2,6 +2,8 @@
   (:require [nio.core :as nio]
             [clojure.java.io :as io]
             [clojure.data.csv :as csv]
+            [clojure.edn :as edn]
+            [clojure.string :as string]
             [smyrna.bitstream :as bitstream]
             [smyrna.container :as container]
             [smyrna.huffman :as huffman :refer [enumerate]]
@@ -34,7 +36,21 @@
 
 (defn read-meta
   [arr]
-  (-> arr io/input-stream GZIPInputStream. io/reader csv/read-csv))
+  (-> arr io/input-stream GZIPInputStream. io/reader java.io.PushbackReader. edn/read))
+
+(defn to-valseq
+  [[header types valsets data]]
+  (map (fn [row]
+         (mapv #(nth %1 %2) valsets row))
+       data))
+
+(defn row-key
+  [[a b c _ d]]
+  (string/join "/" [a b c d]))
+
+(defn locate-by-key
+  [cmeta rkey]
+  (first (keep-indexed #(if (= (row-key %2) rkey) %1 nil) (to-valseq cmeta))))
 
 (defn open
   [f]
@@ -44,14 +60,16 @@
           read-dict (fn [type]
                       (let [elem-name (format "%s.fsa" (name type))
                             elem (elems elem-name)]
-                        (map (partial vector type)
-                             (fsa/strings (fsa/read (buffer-part buf elem))))))
+                        (mapv (partial vector type)
+                              (fsa/strings (fsa/read (buffer-part buf elem))))))
           dict-keys [:word :text :attr :tag]
-          dicts (map read-dict dict-keys)]
+          dicts (map read-dict dict-keys)
+          raw-meta-fn #(buffer-part buf (elems "meta.edn.gz"))]
       (nio/set-byte-order! buf :big-endian)
-      {:tokens (into (vec (apply concat dicts)) [:nospace :end]),
-       :counts (zipmap dict-keys (map count dicts)),
-       :meta #(buffer-part buf (elems "meta.edn.gz"))
+      {:tokens (into (vec (apply concat dicts)) [:nospace :end])
+       :counts (zipmap dict-keys (map count dicts))
+       :raw-meta-fn raw-meta-fn
+       :meta (read-meta (raw-meta-fn))
        :image (long-subbuffer buf (elems "image"))
        :offset (int-subbuffer buf (elems "offset"))
        :numl (int-subbuffer buf (elems "numl"))

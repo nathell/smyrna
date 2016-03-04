@@ -1,6 +1,7 @@
 .lein-*
 .nrepl-port
 target
+site.min.css
 *~
 #*
 *.zip

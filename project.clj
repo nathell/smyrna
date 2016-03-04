@@ -14,6 +14,7 @@
                  [ring-server "0.4.0"]
                  [environ "1.0.2"]
                  [hiccup "1.0.5"]
+                 [compojure "1.4.0"]
                  ;; ClojureScript dependencies
                  [org.clojure/clojurescript "1.7.228" :scope "provided"]
                  [reagent "0.6.0-alpha" :exclusions [org.clojure/tools.reader]]
