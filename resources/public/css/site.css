@@ -1,0 +1,48 @@
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+}
+
+body {
+    position: relative;
+    overflow: hidden;
+    font: 12pt Arial, Helvetica;
+}
+
+.nav {
+    margin: 0;
+    padding: 0;
+    background: #ccc;
+    font: 14pt Arial;
+    color: #333;
+    height: 40px;
+    border-bottom: 1px solid black;
+}
+
+.nav li {
+    float: left;
+    display: inline;
+    margin: 0;
+    padding: 0 10px;
+    line-height: 40px;
+    border-left: 1px solid #ccc;
+    border-right: 1px solid #ccc;
+}
+
+.nav li a {
+    text-decoration: none;
+    color: inherit;
+}
+
+.nav .about {
+    font-weight: bold;
+    font-style: italic;
+    font-family: Times New Roman, Times;
+}
+
+.nav li.selected {
+    background: #edc;
+    border-left: 1px solid black;
+    border-right: 1px solid black;
+}
