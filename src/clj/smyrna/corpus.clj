@@ -76,6 +76,14 @@
        :first-code (int-subbuffer buf (elems "1stcode"))
        :symbols (int-subbuffer buf (elems "symbols"))})))
 
+(defn take-while-global
+  [pred coll]
+  (lazy-seq
+   (when (pred)
+     (let [s (seq coll)]
+       (when s
+         (cons (first s) (take-while-global pred (rest s))))))))
+
 (defn read-document [corpus i & {:keys [lookup], :or {lookup true}}]
   (let [^IBitSource bs (bitstream/bit-source (:image corpus))
         token (fn [] ((if lookup (:tokens corpus) identity) (huffman/decode-symbol bs (:numl corpus) (:first-code corpus) (:symbols corpus))))
@@ -84,7 +92,7 @@
         start (if (zero? i) 0 (.get offset (dec i)))
         end (.get offset i)]
     (.scroll bs start)
-    (vec (take-while (fn [_] (<= (.position bs) end)) (repeatedly token)))))
+    (vec (take-while-global #(< (.position bs) end) (repeatedly token)))))
 
 (defn transform
   ([x] x)
@@ -144,7 +152,7 @@
 (defn num-documents
   [corpus]
   (let [^IntBuffer offset (:offset corpus)]
-    (dec (.limit offset)))) ;; XXX: dec?!
+    (.limit offset)))
 
 (defn rle-append
   [rle n]
