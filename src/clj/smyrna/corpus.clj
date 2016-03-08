@@ -60,10 +60,12 @@
           read-dict (fn [type]
                       (let [elem-name (format "%s.fsa" (name type))
                             elem (elems elem-name)]
-                        (mapv (partial vector type)
-                              (fsa/strings (fsa/read (buffer-part buf elem))))))
+                        (fsa/strings (fsa/read (buffer-part buf elem)))))
+          read-token-dict (fn [type]
+                            (mapv (partial vector type)
+                                  (read-dict type)))
           dict-keys [:word :text :attr :tag]
-          dicts (map read-dict dict-keys)
+          dicts (map read-token-dict dict-keys)
           raw-meta-fn #(buffer-part buf (elems "meta.edn.gz"))]
       (nio/set-byte-order! buf :big-endian)
       {:tokens (into (vec (apply concat dicts)) [:nospace :end])
@@ -71,6 +73,9 @@
        :raw-meta-fn raw-meta-fn
        :meta (read-meta (raw-meta-fn))
        :image (long-subbuffer buf (elems "image"))
+       :index (long-subbuffer buf (elems "index"))
+       :lemmata (read-dict :lemmata)
+       :lemmatizer (int-subbuffer buf (elems "lemmatizer"))
        :offset (int-subbuffer buf (elems "offset"))
        :numl (int-subbuffer buf (elems "numl"))
        :first-code (int-subbuffer buf (elems "1stcode"))
@@ -174,74 +179,3 @@
   [v i seq]
   (reduce (fn [acc n] (update-in! acc [n] rle-append i))
           v seq))
-
-(defn build-lemma-index
-  [corpus {:keys [lemmata lemmatizer]}]
-  (let [num-words (:word (:counts corpus))]
-    (persistent!
-     (reduce
-      (fn [acc i]
-        (let [words (filter #(< % num-words) (read-document corpus i :lookup false))
-              words-lemmatized (distinct (map lemmatizer words))]
-          (rle-add-all! acc i words-lemmatized)))
-      (transient (vec (repeat (count lemmata) nil)))
-      (range (num-documents corpus))))))
-
-;; another approach
-
-(defn build-lemma-index-2
-  [corpus {:keys [lemmata lemmatizer]}]
-  (let [num-words (:word (:counts corpus))
-        occurrences (reduce
-                     (fn [acc i]
-                       (let [words (filter #(< % num-words) (read-document corpus i :lookup false))
-                             words-lemmatized (distinct (map lemmatizer words))]
-                         (into acc (map #(+ i (bit-shift-left % 32)) words-lemmatized))))
-                     (vector-of :long)
-                     (range (num-documents corpus)))
-        ^longs arr (into-array Long/TYPE occurrences)]
-    (Arrays/sort arr)
-    arr))
-
-(defn optimal-b
-  [freq n]
-  (long (Math/ceil (/ (* (Math/log 2) n) freq))))
-
-(defn diffs
-  [x]
-  (into [(inc (first x))]
-        (map - (rest x) x)))
-
-(defn write-index
-  [out idx n]
-  (let [mask (dec (bit-shift-left 1 32))]
-    (with-open [^IBitSink bs (bitstream/file-bit-sink out)]
-      (doseq [part (partition-by #(bit-shift-right % 32) idx)
-              :let [part (map #(bit-and mask %) part)
-                    cnt (count part)
-                    b (optimal-b cnt n)]]
-        (bitstream/write-gamma bs cnt)
-        (doseq [n (diffs part)]
-          (bitstream/write-golomb bs n b))))))
-
-(defn read-index-entry
-  [^IBitSource bs n]
-  (let [freq (bitstream/read-gamma bs)
-        b (optimal-b freq n)]
-    (mapv (fn [_] (bitstream/read-golomb bs b)) (range freq))))
-
-(defn read-index-offsets
-  [^IBitSource bs n c]
-  (take c (repeatedly (fn []
-                        (let [pos (.position bs)]
-                          (read-index-entry bs n)
-                          pos)))))
-
-(defn decode-index-entry
-  [s]
-  (loop [n (dec (first s))
-         s (next s)
-         res [n]]
-    (if (seq s)
-      (recur (+ n (first s)) (next s) (conj res (+ n (first s))))
-      res)))
