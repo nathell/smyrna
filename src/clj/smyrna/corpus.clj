@@ -8,9 +8,10 @@
             [smyrna.container :as container]
             [smyrna.huffman :as huffman :refer [enumerate]]
             [smyrna.fsa :as fsa]
+            [smyrna.index :as index]
             polelum)
   (:import [java.nio ByteBuffer IntBuffer]
-           [java.util Arrays]
+           [java.util Arrays Collections]
            [java.util.zip GZIPInputStream]
            [smyrna.bitstream IBitSource IBitSink]))
 
@@ -52,6 +53,16 @@
   [cmeta rkey]
   (first (keep-indexed #(if (= (row-key %2) rkey) %1 nil) (to-valseq cmeta))))
 
+(defn num-documents
+  [corpus]
+  (let [^IntBuffer offset (:offset corpus)]
+    (.limit offset)))
+
+(defn add-index-offsets
+  [corpus]
+  (assoc corpus
+         :index-offsets (index/read-index-offsets (bitstream/bit-source (:index corpus)) (num-documents corpus) (count (:lemmata corpus)))))
+
 (defn open
   [f]
   (let [buf (nio/mmap f)]
@@ -68,18 +79,20 @@
           dicts (map read-token-dict dict-keys)
           raw-meta-fn #(buffer-part buf (elems "meta.edn.gz"))]
       (nio/set-byte-order! buf :big-endian)
-      {:tokens (into (vec (apply concat dicts)) [:nospace :end])
-       :counts (zipmap dict-keys (map count dicts))
-       :raw-meta-fn raw-meta-fn
-       :meta (read-meta (raw-meta-fn))
-       :image (long-subbuffer buf (elems "image"))
-       :index (long-subbuffer buf (elems "index"))
-       :lemmata (read-dict :lemmata)
-       :lemmatizer (int-subbuffer buf (elems "lemmatizer"))
-       :offset (int-subbuffer buf (elems "offset"))
-       :numl (int-subbuffer buf (elems "numl"))
-       :first-code (int-subbuffer buf (elems "1stcode"))
-       :symbols (int-subbuffer buf (elems "symbols"))})))
+      (->
+       {:tokens (into (vec (apply concat dicts)) [:nospace :end])
+        :counts (zipmap dict-keys (map count dicts))
+        :raw-meta-fn raw-meta-fn
+        :meta (read-meta (raw-meta-fn))
+        :image (long-subbuffer buf (elems "image"))
+        :index (long-subbuffer buf (elems "index"))
+        :lemmata (read-dict :lemmata)
+        :lemmatizer (int-subbuffer buf (elems "lemmatizer"))
+        :offset (int-subbuffer buf (elems "offset"))
+        :numl (int-subbuffer buf (elems "numl"))
+        :first-code (int-subbuffer buf (elems "1stcode"))
+        :symbols (int-subbuffer buf (elems "symbols"))}
+       add-index-offsets))))
 
 (defn take-while-global
   [pred coll]
@@ -154,11 +167,6 @@
     {:lemmata lemmata,
      :lemmatizer (mapv (comp enum polelum/lemmatize second) words)}))
 
-(defn num-documents
-  [corpus]
-  (let [^IntBuffer offset (:offset corpus)]
-    (.limit offset)))
-
 (defn rle-append
   [rle n]
   (if-not rle
@@ -179,3 +187,11 @@
   [v i seq]
   (reduce (fn [acc n] (update-in! acc [n] rle-append i))
           v seq))
+
+(defn contains-phrase?
+  [corpus phrase i]
+  (if (= (count phrase) 1)
+    true
+    (let [doc (read-document corpus i :lookup false)
+          docl (mapv #(if (< % (:word (:counts corpus))) (.get (:lemmatizer corpus) %) -1) doc)]
+      (not= (Collections/indexOfSubList docl (mapv int phrase)) -1))))
