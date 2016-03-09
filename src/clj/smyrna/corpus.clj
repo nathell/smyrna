@@ -39,19 +39,13 @@
   [arr]
   (-> arr io/input-stream GZIPInputStream. io/reader java.io.PushbackReader. edn/read))
 
-(defn to-valseq
-  [[header types valsets data]]
-  (map (fn [row]
-         (mapv #(nth %1 %2) valsets row))
-       data))
-
 (defn row-key
   [[a b c _ d]]
   (string/join "/" [a b c d]))
 
 (defn locate-by-key
   [cmeta rkey]
-  (first (keep-indexed #(if (= (row-key %2) rkey) %1 nil) (to-valseq cmeta))))
+  (first (keep-indexed #(if (= (row-key %2) rkey) %1 nil) (meta/to-valseq cmeta))))
 
 (defn num-documents
   [corpus]

@@ -39,3 +39,17 @@
      (map (fn [row]
             (mapv #(%1 %2) enums row))
           data)]))
+
+(defn to-valseq
+  [[header types valsets data]]
+  (map (fn [row]
+         (mapv #(nth %1 %2) valsets row))
+       data))
+
+(defn get-header
+  [[header types valsets]]
+  (mapv (fn [column valset]
+          (if (< (count valset) 100)
+            [column (vec valset)]
+            [column]))
+        header valsets))

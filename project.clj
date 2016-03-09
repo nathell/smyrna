@@ -8,6 +8,7 @@
                  [clj-tagsoup "0.3.0" :exclusions [org.clojure/clojure]]
                  [polelum "0.1.0-SNAPSHOT"]
                  [org.clojure/data.csv "0.1.3"]
+                 [org.clojure/core.memoize "0.5.8"]
                  [org.carrot2/morfologik-fsa-builders "2.0.1"]
                  [ring "1.4.0"]
                  [ring/ring-defaults "0.1.5"]

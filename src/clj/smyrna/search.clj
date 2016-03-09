@@ -23,3 +23,45 @@
         candidates (map (comp set (partial search-lemma corpus)) lemmata)]
     (filter (partial corpus/contains-phrase? corpus lemmata)
             (sort (apply intersection candidates)))))
+
+(defn filter-fn
+  [header-indexed valsets [k v]]
+  (let [i (header-indexed k)]
+    (if (set? v)
+      (fn [row] (v (row i)))
+      (let [valset (valsets i)
+            v (.toLowerCase v)
+            matches (set (remove nil? (map-indexed (fn [i x] (when (not= -1 (.indexOf (.toLowerCase x) v)) i)) valset)))]
+        (fn [row] (matches (row i)))))))
+
+(defn andf
+  ([] (constantly true))
+  ([f] f)
+  ([f g] (fn [x] (and (f x) (g x))))
+  ([f g & fs] (andf f (apply andf g fs))))
+
+(defn compute-filter
+  [{[header _ valsets] :meta} m]
+  (let [header-indexed (zipmap header (range))
+        single-filters (map (partial filter-fn header-indexed valsets) m)]
+    (apply andf single-filters)))
+
+(defn nths
+  ([s ns] (nths s ns 0))
+  ([s [n & ns] skipped]
+   (lazy-seq
+    (if n
+      (let [s (drop (- n skipped) s)]
+        (cons (first s) (nths (rest s) ns (inc n))))))))
+
+(defn get-documents
+  [corpus {:keys [offset limit phrase filters]}]
+  (let [documents (if phrase
+                    (search-phrase corpus phrase)
+                    (range (corpus/num-documents corpus)))
+        flt (compute-filter corpus filters)
+        [_ _ valsets all-rows] (:meta corpus)
+        documents (filter flt (nths all-rows documents))
+        decode-row (fn [row] (mapv #(nth %1 %2) valsets row))]
+    {:results (mapv decode-row (drop offset (take limit documents))),
+     :total (delay (count documents))}))
