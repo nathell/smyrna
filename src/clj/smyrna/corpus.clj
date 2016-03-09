@@ -9,6 +9,7 @@
             [smyrna.huffman :as huffman :refer [enumerate]]
             [smyrna.fsa :as fsa]
             [smyrna.index :as index]
+            [smyrna.meta :as meta]
             polelum)
   (:import [java.nio ByteBuffer IntBuffer]
            [java.util Arrays Collections]

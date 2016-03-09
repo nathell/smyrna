@@ -60,10 +60,10 @@
            :value (get-in @state [:filters key])
            :on-change #(swap! state update-in [:filters key] (constantly (-> % .-target .-value)))}])
 
-(defn make-filter [valset key state]
-  (if (< (count valset) 200)
-    (filter-checkboxes valset key state)
-    (filter-text key state)))
+(defn make-filter [col valset state]
+  (if valset
+    (filter-checkboxes valset col state)
+    (filter-text col state)))
 
 (defn filter-fn
   [header-indexed valsets [k v]]
@@ -89,11 +89,48 @@
 
 ;; Table
 
-(defn row-key [header valsets row]
-  (let [parts ["term" "pos" "dzien" "wyp"]
-        header-indexed (zipmap header (range))]
-    ;; XXX: configurable!
-    (string/join "/" (map #(let [i (header-indexed %)] (nth (nth valsets i) (row i))) parts))))
+(defn row-key [[term pos dzien _ wyp]]
+  ;; XXX: configurable!
+  (string/join "/" [term pos dzien wyp]))
+
+(def table-contents (atom nil))
+
+(defn refresh-table [params]
+  (go
+    (reset! table-contents
+            (:body (<! (http/post "/api/get-documents" {:edn-params params}))))))
+
+(defn table-params [{:keys [page rows-per-page]}]
+  {:offset (* page rows-per-page), :limit rows-per-page})
+
+(def table-state (atom {:page 0, :rows-per-page 10, :shown-filter nil, :filters {}}))
+
+(refresh-table (table-params @table-state))
+
+(defn table2 [header state]
+  (let [{:keys [shown-filter]} @state
+        update-state (fn [el f] #(do (swap! state update-in [el] (if (fn? f) f (constantly f)))
+                                     (refresh-table (table-params @state))))]
+    [:div
+     [:h1 "Lista dokumentów"]
+     [:p
+      [:a {:href "#" :on-click (update-state :page dec)} "Poprzednie"]
+      [:a {:href "#" :on-click (update-state :page inc)} "Następne"]]
+     [:table
+      [:thead
+       (vec (concat [:tr]
+                    [[:th "Akcje"]]
+                    (for [[col valset] header]
+                      [:th
+                       [:a {:href "#" :on-click (update-state :shown-filter col)} col]
+                       (if (= shown-filter col)
+                         [make-filter col valset state])])))]
+      [:tbody (for [row @table-contents]
+                [:tr
+                 [:td [:a {:href "#" :on-click #(do (reset! current-document (row-key row))
+                                                    (reset! current-page 2))} "Zobacz"]]
+                 (for [cell row]
+                   [:td cell])])]]]))
 
 (defn table [[header types valsets data] state]
   (let [{:keys [page rows-per-page shown-filter filters]} @state
@@ -136,16 +173,15 @@
 
 (def table-state (atom {:page 0, :rows-per-page 10, :shown-filter nil, :filters {}}))
 
-(defn root [cmeta]
+(defn root [header]
   [navbar current-page
-   "Dokumenty" [table cmeta table-state]
+   "Dokumenty" [table2 header table-state]
    "Wyszukiwanie" [search]
    "Wyniki" [document-browser current-document]])
 
 (defn mount-root []
   (go
-    (let [resp (<! (http/get meta-location {:with-credentials? false}))]
-      (def cmeta (:body resp))
+    (let [resp (<! (http/get "/meta-header" {:with-credentials? false}))]
       (reagent/render [root (:body resp)] (.getElementById js/document "app")))))
 
 (defn init! []

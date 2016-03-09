@@ -63,5 +63,5 @@
         [_ _ valsets all-rows] (:meta corpus)
         documents (filter flt (nths all-rows documents))
         decode-row (fn [row] (mapv #(nth %1 %2) valsets row))]
-    {:results (mapv decode-row (drop offset (take limit documents))),
+    {:results (mapv decode-row (take limit (drop offset documents))),
      :total (delay (count documents))}))

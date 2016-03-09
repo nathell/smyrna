@@ -3,8 +3,10 @@
             [hiccup.core :refer [html]]
             [smyrna.middleware :refer [wrap-middleware]]
             [smyrna.corpus :as corpus]
+            [smyrna.search :as search]
+            [clojure.edn :as edn]
             [smyrna.meta :as meta]
-            [compojure.core :refer [GET defroutes]]
+            [compojure.core :refer [GET POST defroutes]]
             [clojure.java.io :as io]
             [environ.core :refer [env]]))
 
@@ -22,14 +24,20 @@
       [:h1 "Loading Smyrna, please wait..."]]
      (include-js "js/app.js")]))
 
-(defn edn-response
-  ([body] (edn-response {} body))
+(defn edn-response-raw
+  ([body] (edn-response-raw {} body))
   ([extra-header body] {:status 200, :headers (into {"Content-Type" "application/edn; charset=UTF-8"} extra-header), :body body}))
+
+(defn edn-response
+  ([x] (edn-response {} x))
+  ([extra-header x] (edn-response-raw extra-header (pr-str x))))
 
 (defroutes routes
   (GET "/" [] loading-page)
-  (GET "/meta-header" [] (edn-response (pr-str (meta/get-header (:meta corpus)))))
-  (GET "/meta" [] (edn-response {"Content-Encoding" "gzip"} (io/input-stream ((:raw-meta-fn corpus)))))
+  (GET "/meta-header" [] (edn-response (meta/get-header (:meta corpus))))
+  (GET "/meta" [] (edn-response-raw {"Content-Encoding" "gzip"} (io/input-stream ((:raw-meta-fn corpus)))))
+  (POST "/api/get-documents" {body :body} (let [params (edn/read-string (slurp body))]
+                                            (edn-response (:results (search/get-documents corpus params)))))
   (GET "/corpus/*" [*]
        (let [k *
              k (if (.endsWith k ".html")
