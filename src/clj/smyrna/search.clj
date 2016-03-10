@@ -17,10 +17,11 @@
   (search-lemma corpus (.indexOf (:lemmata corpus) word)))
 
 (defn search-phrase
-  [corpus phrase]
+  [corpus phrase within]
   (let [words (string/split phrase #" ")
         lemmata (map #(.indexOf (:lemmata corpus) %) words)
-        candidates (map (comp set (partial search-lemma corpus)) lemmata)]
+        candidates (map (comp set (partial search-lemma corpus)) lemmata)
+        candidates (if within (conj candidates (set within)) candidates)]
     (filter (partial corpus/contains-phrase? corpus lemmata)
             (sort (apply intersection candidates)))))
 
@@ -54,14 +55,30 @@
       (let [s (drop (- n skipped) s)]
         (cons (first s) (nths (rest s) ns (inc n))))))))
 
-(defn get-documents
-  [corpus {:keys [offset limit phrase filters]}]
-  (let [documents (if (seq phrase)
-                    (search-phrase corpus phrase)
-                    (range (corpus/num-documents corpus)))
+(def contexts (atom {}))
+
+(defn get-documents-raw
+  [corpus {:keys [phrase filters within]}]
+  (let [context (:documents (@contexts within))
+        documents (if (seq phrase)
+                    (search-phrase corpus phrase context)
+                    (or context (range (corpus/num-documents corpus))))
         flt (compute-filter corpus filters)
-        [_ _ valsets all-rows] (:meta corpus)
-        documents (filter flt (nths all-rows documents))
+        [_ _ valsets all-rows] (:meta corpus)]
+    (map (fn [i row] (when (flt row) [i row]))
+         documents
+         (nths all-rows documents))))
+
+(defn get-documents
+  [corpus {:keys [offset limit], :or {offset 0, limit 10}, :as q}]
+  (let [documents (map second (get-documents-raw corpus q))
+        [_ _ valsets _] (:meta corpus)
         decode-row (fn [row] (mapv #(nth %1 %2) valsets row))]
     {:results (mapv decode-row (take limit (drop offset documents))),
      :total (delay (count documents))}))
+
+(defn create-context
+  [corpus name desc]
+  (swap! contexts assoc name
+         {:description desc,
+          :documents (map first (get-documents-raw corpus desc))}))
