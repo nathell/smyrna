@@ -38,6 +38,10 @@
   (GET "/meta" [] (edn-response-raw {"Content-Encoding" "gzip"} (io/input-stream ((:raw-meta-fn corpus)))))
   (POST "/api/get-documents" {body :body} (let [params (edn/read-string (slurp body))]
                                             (edn-response (:results (search/get-documents corpus params)))))
+  (POST "/api/get-contexts" [] (edn-response (vec (sort-by first (map (fn [[k v]] [k (:description v)]) @search/contexts)))))
+  (POST "/api/create-context" {body :body} (let [{:keys [name description]} (edn/read-string (slurp body))]
+                                             (search/create-context corpus name description)
+                                             (edn-response "OK")))
   (GET "/corpus/*" [*]
        (let [k *
              k (if (.endsWith k ".html")

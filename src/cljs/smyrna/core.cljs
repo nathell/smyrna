@@ -31,16 +31,26 @@
 
 (def table-contents (atom nil))
 
-(defn refresh-table [params]
-  (go
-    (reset! table-contents
-            (:body (<! (http/post "/api/get-documents" {:edn-params params}))))))
+(defn api-call [method params & [f]]
+  (let [f (or f identity)]
+    (go (f (:body (<! (http/post (str "/api/" method) {:edn-params params})))))))
 
-(defn table-params [{:keys [page rows-per-page filters phrase]}]
-  {:offset (* page rows-per-page), :limit rows-per-page, :filters filters, :phrase phrase})
+(defn refresh-table [params]
+  (api-call "get-documents" params #(reset! table-contents %)))
+
+(defn table-params [{:keys [page rows-per-page filters phrase within]}]
+  {:offset (* page rows-per-page),
+   :limit rows-per-page,
+   :filters filters,
+   :phrase phrase,
+   :within within})
 
 (def search-params (atom {:page 0, :rows-per-page 10, :filters {}}))
 (def table-state (atom {:shown-filter nil}))
+(def contexts (atom []))
+
+(defn refresh-contexts []
+  (api-call "get-contexts" params #(reset! contexts %)))
 
 (defn update-table-params
   [el f & args]
@@ -50,9 +60,16 @@
     (refresh-table (table-params @search-params))))
 
 (defn search []
-  [:input {:type "text", :placeholder "Wpisz szukaną frazę",
-           :on-change #(update-table-params :phrase (-> % .-target .-value)),
-           :value (:phrase @search-params)}])
+  [:div
+   [:input {:type "text", :placeholder "Wpisz szukaną frazę",
+            :on-change #(update-table-params :phrase (-> % .-target .-value)),
+            :value (:phrase @search-params)}]
+   "Obszar: "
+   (into [:select
+          {:on-change #(update-table-params :within (-> % .-target .-value))}
+          [:option "Cały korpus"]]
+         (for [[opt _] @contexts]
+           [:option {:value opt, :selected (= (:within @search-params) opt)} opt]))])
 
 (defn toggle [set el]
   ((if (set el) disj conj) set el))
@@ -119,12 +136,26 @@
   (string/join "/" [term pos dzien wyp]))
 
 (refresh-table (table-params @search-params))
+(refresh-contexts)
+
+(defn create-context
+  [name]
+  (api-call "create-context" {:name name, :description (table-params @search-params)})
+  (swap! contexts conj [name (table-params @search-params)]))
+
+(defn context-creator
+  []
+  (let [id (str (gensym))]
+    [:div
+     [:input {:id id, :type "text", :placeholder "Wpisz nazwę obszaru"}]
+     [:button {:on-click #(create-context (.-value (.getElementById js/document id)))} "Utwórz kontekst"]]))
 
 (defn table2 [header state]
   (let [{:keys [shown-filter]} @state]
     [:div
      [:h1 "Lista dokumentów"]
      [search]
+     [context-creator]
      [:p
       [:a {:href "#" :on-click #(update-table-params :page dec)} "Poprzednie"]
       [:a {:href "#" :on-click #(update-table-params :page inc)} "Następne"]]
