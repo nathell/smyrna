@@ -29,6 +29,27 @@
 
 ;; Filter
 
+
+(def table-contents (atom nil))
+
+(defn refresh-table [params]
+  (go
+    (reset! table-contents
+            (:body (<! (http/post "/api/get-documents" {:edn-params params}))))))
+
+(defn table-params [{:keys [page rows-per-page filters]}]
+  {:offset (* page rows-per-page), :limit rows-per-page, :filters filters})
+
+(def search-params (atom {:page 0, :rows-per-page 10, :filters {}}))
+(def table-state (atom {:shown-filter nil}))
+
+(defn update-table-params
+  [el f & args]
+  (let [el (if (vector? el) el [el])
+        f (if (fn? f) f (constantly f))]
+    (apply swap! search-params update-in el f args)
+    (refresh-table (table-params @search-params))))
+
 (defn toggle [set el]
   ((if (set el) disj conj) set el))
 
@@ -47,18 +68,18 @@
                     [:input {:type "checkbox"
                              :checked (let [flt (get-in @state [:filters key])]
                                         (if flt (boolean (flt n)) true))
-                             :on-change #(swap! state update-in [:filters key] toggle-nilable n (count labels))}]
+                             :on-change #(update-table-params [:filters key] toggle-nilable n (count labels))}]
                     [:label {:key (str "filter-lbl-" n)} label]])
                  (range) labels))
     [[:div
-      [:button {:on-click #(swap! state update-in [:filters] dissoc key)} "Wszystkie"]
-      [:button {:on-click #(swap! state update-in [:filters key] (constantly #{}))} "Żodyn"]
-      [:button {:on-click #(swap! state update-in [:shown-filter] (constantly nil))} "OK"]]])))
+      [:button {:on-click #(update-table-params :filters dissoc key)} "Wszystkie"]
+      [:button {:on-click #(update-table-params [:filters key] #{})} "Żodyn"]
+      [:button {:on-click #(swap! table-state update-in [:shown-filter] (constantly nil))} "OK"]]])))
 
 (defn filter-text [key state]
   [:input {:type "text"
-           :value (get-in @state [:filters key])
-           :on-change #(swap! state update-in [:filters key] (constantly (-> % .-target .-value)))}])
+           :value (get-in @search-params [:filters key])
+           :on-change #(update-table-params [:filters key] (-> % .-target .-value))}])
 
 (defn make-filter [col valset state]
   (if valset
@@ -93,73 +114,30 @@
   ;; XXX: configurable!
   (string/join "/" [term pos dzien wyp]))
 
-(def table-contents (atom nil))
-
-(defn refresh-table [params]
-  (go
-    (reset! table-contents
-            (:body (<! (http/post "/api/get-documents" {:edn-params params}))))))
-
-(defn table-params [{:keys [page rows-per-page]}]
-  {:offset (* page rows-per-page), :limit rows-per-page})
-
-(def table-state (atom {:page 0, :rows-per-page 10, :shown-filter nil, :filters {}}))
-
-(refresh-table (table-params @table-state))
+(refresh-table (table-params @search-params))
 
 (defn table2 [header state]
-  (let [{:keys [shown-filter]} @state
-        update-state (fn [el f] #(do (swap! state update-in [el] (if (fn? f) f (constantly f)))
-                                     (refresh-table (table-params @state))))]
+  (let [{:keys [shown-filter]} @state]
     [:div
      [:h1 "Lista dokumentów"]
      [:p
-      [:a {:href "#" :on-click (update-state :page dec)} "Poprzednie"]
-      [:a {:href "#" :on-click (update-state :page inc)} "Następne"]]
+      [:a {:href "#" :on-click #(update-table-params :page dec)} "Poprzednie"]
+      [:a {:href "#" :on-click #(update-table-params :page inc)} "Następne"]]
      [:table
       [:thead
        (vec (concat [:tr]
                     [[:th "Akcje"]]
                     (for [[col valset] header]
                       [:th
-                       [:a {:href "#" :on-click (update-state :shown-filter col)} col]
+                       [:a {:href "#" :on-click #(swap! state update-in [:shown-filter] (constantly col))} col]
                        (if (= shown-filter col)
-                         [make-filter col valset state])])))]
+                         [make-filter col valset search-params])])))]
       [:tbody (for [row @table-contents]
                 [:tr
                  [:td [:a {:href "#" :on-click #(do (reset! current-document (row-key row))
                                                     (reset! current-page 2))} "Zobacz"]]
                  (for [cell row]
                    [:td cell])])]]]))
-
-(defn table [[header types valsets data] state]
-  (let [{:keys [page rows-per-page shown-filter filters]} @state
-        flt (compute-filter header valsets filters)
-        data (filter flt data)
-        num-pages (js/Math.ceil (/ (count data) rows-per-page))
-        offset (* page rows-per-page)
-        update-state (fn [el f] #(swap! state update-in [el] (if (fn? f) f (constantly f))))]
-    [:div
-     [:h1 "Lista dokumentów"]
-     [:p
-      [:a {:href "#" :on-click (update-state :page dec)} "Poprzednie"]
-      [:a {:href "#" :on-click (update-state :page inc)} "Następne"]]
-     [:table
-      [:thead
-       (vec (concat [:tr]
-                    [[:th "Akcje"]]
-                    (for [[i col] (map-indexed vector header)]
-                      [:th
-                       [:a {:href "#" :on-click (update-state :shown-filter col)} col]
-                       (if (= shown-filter col)
-                         [make-filter (valsets i) col state])])))]
-      [:tbody
-       (for [row (take rows-per-page (drop offset data))]
-         [:tr
-          [:td [:a {:href "#" :on-click #(do (reset! current-document (row-key header valsets row))
-                                             (reset! current-page 2))} "Zobacz"]]
-          (map (fn [valset i] [:td (nth valset i)]) valsets row)])]]
-     [:p (str (count data) " dokumentów (strona " (inc page) " z " num-pages ")")]]))
 
 (defn document-browser [state]
   [:div {:class "nav-container"}
@@ -170,8 +148,6 @@
 
 (defn search []
   [:h1 "Tu będzie wyszukiwarka."])
-
-(def table-state (atom {:page 0, :rows-per-page 10, :shown-filter nil, :filters {}}))
 
 (defn root [header]
   [navbar current-page
