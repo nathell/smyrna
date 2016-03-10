@@ -56,7 +56,7 @@
 
 (defn get-documents
   [corpus {:keys [offset limit phrase filters]}]
-  (let [documents (if phrase
+  (let [documents (if (seq phrase)
                     (search-phrase corpus phrase)
                     (range (corpus/num-documents corpus)))
         flt (compute-filter corpus filters)

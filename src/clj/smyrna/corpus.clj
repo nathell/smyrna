@@ -40,9 +40,7 @@
   [arr]
   (-> arr io/input-stream GZIPInputStream. io/reader java.io.PushbackReader. edn/read))
 
-(defn row-key
-  [[a b c _ d]]
-  (string/join "/" [a b c d]))
+
 
 (defn locate-by-key
   [cmeta rkey]
@@ -57,6 +55,10 @@
   [corpus]
   (assoc corpus
          :index-offsets (index/read-index-offsets (bitstream/bit-source (:index corpus)) (num-documents corpus) (count (:lemmata corpus)))))
+
+(defn add-key-index
+  [corpus]
+  (assoc corpus :key-index (meta/create-key-index (:meta corpus))))
 
 (defn open
   [f]
@@ -87,7 +89,8 @@
         :numl (int-subbuffer buf (elems "numl"))
         :first-code (int-subbuffer buf (elems "1stcode"))
         :symbols (int-subbuffer buf (elems "symbols"))}
-       add-index-offsets))))
+       add-index-offsets
+       add-key-index))))
 
 (defn take-while-global
   [pred coll]

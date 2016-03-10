@@ -29,10 +29,6 @@
 
 ;; Filter
 
-(defn search []
-  [:input {:type "text", :placeholder "Wpisz szukaną frazę",
-           :on-change #(update-table-params :phrase (-> % .-target .-value))}])
-
 (def table-contents (atom nil))
 
 (defn refresh-table [params]
@@ -52,6 +48,11 @@
         f (if (fn? f) f (constantly f))]
     (apply swap! search-params update-in el f args)
     (refresh-table (table-params @search-params))))
+
+(defn search []
+  [:input {:type "text", :placeholder "Wpisz szukaną frazę",
+           :on-change #(update-table-params :phrase (-> % .-target .-value)),
+           :value (:phrase @search-params)}])
 
 (defn toggle [set el]
   ((if (set el) disj conj) set el))

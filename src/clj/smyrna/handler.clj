@@ -42,7 +42,9 @@
        (let [k *
              k (if (.endsWith k ".html")
                  (subs k 0 (- (count k) (count ".html")))
-                 k)]
-         (html (corpus/deserialize (corpus/read-document corpus (corpus/locate-by-key (:meta corpus) k)))))))
+                 k)
+             i ((:key-index corpus) k)]
+         (when i
+           (html (corpus/deserialize (corpus/read-document corpus i)))))))
 
 (def app (wrap-middleware #'routes))
