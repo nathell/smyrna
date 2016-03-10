@@ -45,7 +45,8 @@
    :phrase phrase,
    :within within})
 
-(def search-params (atom {:page 0, :rows-per-page 10, :filters {}}))
+(def initial-search-params {:page 0, :rows-per-page 10, :filters {}})
+(def search-params (atom initial-search-params))
 (def table-state (atom {:shown-filter nil}))
 (def contexts (atom []))
 
@@ -69,7 +70,8 @@
           {:on-change #(update-table-params :within (-> % .-target .-value))}
           [:option "Cały korpus"]]
          (for [[opt _] @contexts]
-           [:option {:value opt, :selected (= (:within @search-params) opt)} opt]))])
+           [:option {:value opt, :selected (= (:within @search-params) opt)} opt]))
+   [:button {:on-click #(do (reset! search-params initial-search-params) (refresh-table (table-params @search-params)))} "Resetuj filtry"]])
 
 (defn toggle [set el]
   ((if (set el) disj conj) set el))
@@ -182,10 +184,74 @@
      [:iframe {:width "100%" :height "100%" :src (str "/corpus/" @state)}]
      [:h2 "Brak dokumentu do wyświetlenia."])])
 
+(def wordcloud-data (atom nil))
+
+(defn wordcloud-draw [words]
+  (-> js/d3 (.select "#wcl") (.selectAll "svg") (.remove))
+  (-> js/d3
+      (.select "#wcl")
+      (.append "svg")
+      (.attr "width" 800)
+      (.attr "height" 600)
+      (.append "g")
+      (.attr "transform" "translate(400,300)")
+      (.selectAll "text")
+      (.data words)
+      (.enter)
+      (.append "text")
+      (.style "font-size" #(str (.-size %) "px"))
+      (.style "font-weight" "bold")
+      (.style "font-family" "Arial")
+      (.attr "text-anchor" "middle")
+      (.attr "transform" #(str "translate(" (.-x %) "," (.-y %) ")rotate(" (.-rotate %) ")"))
+      (.text #(.-text %))))
+
+(defn wordcloud-sizes
+  [ll]
+  (let [words (map first ll)
+        counts (map second ll)
+        maxc (apply max counts)
+        scaled (map #(/ % maxc) counts)
+        sizes (map #(* 100 (js/Math.sqrt %)) scaled)]
+    (zipmap words sizes)))
+
+(defn wordcloud-layout []
+  (let [w (clj->js (for [[word count] (wordcloud-sizes @wordcloud-data)] {:text word, :size count}))]
+    (-> js/d3.layout
+        (.cloud)
+        (.size #js [800 600])
+        (.words w)
+        (.padding 5)
+        (.font "Arial")
+        (.fontWeight "bold")
+        (.fontSize #(.-size %))
+        (.on "end" wordcloud-draw)
+        (.start))))
+
+(defn wordcloud-tree []
+  (identity @wordcloud-data)
+  (let [id (gensym)]
+    [:div
+     (into [:select
+            {:id id}
+            #_{:on-change #(update-table-params :within (-> % .-target .-value))}
+            #_[:option "Cały korpus"]]
+           (for [[opt _] @contexts]
+             [:option {:value opt} opt]))
+     [:button {:on-click (fn [] (api-call "compare-contexts" [(.-value (.getElementById js/document id)) nil] #(reset! wordcloud-data %)))}
+      "Pokaż"]
+     [:div {:id "wcl"}]]))
+
+(defn wordcloud []
+  (reagent/create-class {:reagent-render wordcloud-tree,
+                         :component-did-mount wordcloud-layout,
+                         :component-did-update wordcloud-layout}))
+
 (defn root [header]
   [navbar current-page
    "Lista dokumentów" [table2 header table-state]
-   "Przeglądanie" [document-browser current-document]])
+   "Przeglądanie" [document-browser current-document]
+   "Chmury słów" [wordcloud]])
 
 (defn mount-root []
   (go

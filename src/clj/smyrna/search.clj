@@ -57,17 +57,22 @@
 
 (def contexts (atom {}))
 
+(defn get-context [corpus name]
+  (or (:documents (@contexts name))
+      (range (corpus/num-documents corpus))))
+
 (defn get-documents-raw
   [corpus {:keys [phrase filters within]}]
-  (let [context (:documents (@contexts within))
+  (let [context (get-context corpus within)
         documents (if (seq phrase)
                     (search-phrase corpus phrase context)
-                    (or context (range (corpus/num-documents corpus))))
+                    context)
         flt (compute-filter corpus filters)
         [_ _ valsets all-rows] (:meta corpus)]
-    (map (fn [i row] (when (flt row) [i row]))
-         documents
-         (nths all-rows documents))))
+    (remove nil?
+            (map (fn [i row] (when (flt row) [i row]))
+                 documents
+                 (nths all-rows documents)))))
 
 (defn get-documents
   [corpus {:keys [offset limit], :or {offset 0, limit 10}, :as q}]
@@ -82,3 +87,45 @@
   (swap! contexts assoc name
          {:description desc,
           :documents (map first (get-documents-raw corpus desc))}))
+
+(defn count-lexemes
+  [{:keys [lemmata ^java.nio.IntBuffer lemmatizer counts] :as corpus} docs]
+  (let [^longs arr (make-array Long/TYPE (count lemmata))
+        ^long wc (:word counts)]
+    (doseq [i docs
+            :let [doc (corpus/read-document corpus i :lookup false)]
+            ^long token doc
+            :when (< token wc)
+            :let [l (.get lemmatizer token)]]
+      (aset arr l (inc (aget arr l))))
+    arr))
+
+(defn log-likelihoods
+  [freqs freqs-ref]
+  (let [total (apply + freqs)
+        total-ref (apply + freqs-ref)]
+    (mapv (fn [a b]
+            (if (and (pos? a) (pos? b))
+              (let [scale (/ (+ a b) (+ total total-ref))
+                    e1 (* total scale)
+                    e2 (* total-ref scale)]
+                (* 2 (+ (* a (Math/log (/ a e1)))
+                        (* b (Math/log (/ b e2))))))
+              0))
+          freqs freqs-ref)))
+
+(def count-context
+  (memoize (fn [corpus context-name]
+             (count-lexemes corpus (get-context corpus context-name)))))
+
+(defn compare-contexts
+  [corpus c1 c2]
+  (let [count1 (count-context corpus c1)
+        count2 (count-context corpus c2)
+        ll (log-likelihoods count1 count2)]
+    (->> ll
+         (map vector (:lemmata corpus))
+         (sort-by second >)
+         (take-while (comp pos? second))
+         (take 200)
+         vec)))

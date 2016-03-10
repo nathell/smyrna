@@ -40,12 +40,6 @@
   [arr]
   (-> arr io/input-stream GZIPInputStream. io/reader java.io.PushbackReader. edn/read))
 
-
-
-(defn locate-by-key
-  [cmeta rkey]
-  (first (keep-indexed #(if (= (row-key %2) rkey) %1 nil) (meta/to-valseq cmeta))))
-
 (defn num-documents
   [corpus]
   (let [^IntBuffer offset (:offset corpus)]
@@ -102,7 +96,7 @@
 
 (defn read-document [corpus i & {:keys [lookup], :or {lookup true}}]
   (let [^IBitSource bs (bitstream/bit-source (:image corpus))
-        token (fn [] ((if lookup (:tokens corpus) identity) (huffman/decode-symbol bs (:numl corpus) (:first-code corpus) (:symbols corpus))))
+        token (fn [] ((if lookup (:tokens corpus) long) (huffman/decode-symbol bs (:numl corpus) (:first-code corpus) (:symbols corpus))))
         ^IntBuffer offset (:offset corpus)
         i (long i)
         start (if (zero? i) 0 (.get offset (dec i)))
@@ -187,9 +181,9 @@
           v seq))
 
 (defn contains-phrase?
-  [corpus phrase i]
+  [{:keys [^java.nio.IntBuffer lemmatizer counts] :as corpus} phrase i]
   (if (= (count phrase) 1)
     true
     (let [doc (read-document corpus i :lookup false)
-          docl (mapv #(if (< % (:word (:counts corpus))) (.get (:lemmatizer corpus) %) -1) doc)]
+          docl (mapv (fn [^long i] (if (< i (:word (:counts corpus))) (.get lemmatizer i) -1)) doc)]
       (not= (Collections/indexOfSubList docl (mapv int phrase)) -1))))

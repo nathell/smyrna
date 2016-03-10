@@ -22,6 +22,8 @@
     [:body
      [:div#app
       [:h1 "Loading Smyrna, please wait..."]]
+     (include-js "js/d3.js")
+     (include-js "js/d3.layout.cloud.js")
      (include-js "js/app.js")]))
 
 (defn edn-response-raw
@@ -42,6 +44,8 @@
   (POST "/api/create-context" {body :body} (let [{:keys [name description]} (edn/read-string (slurp body))]
                                              (search/create-context corpus name description)
                                              (edn-response "OK")))
+  (POST "/api/compare-contexts" {body :body} (let [[c1 c2] (edn/read-string (slurp body))]
+                                               (edn-response (search/compare-contexts corpus c1 c2))))
   (GET "/corpus/*" [*]
        (let [k *
              k (if (.endsWith k ".html")
