@@ -29,6 +29,9 @@
 
 ;; Filter
 
+(defn search []
+  [:input {:type "text", :placeholder "Wpisz szukaną frazę",
+           :on-change #(update-table-params :phrase (-> % .-target .-value))}])
 
 (def table-contents (atom nil))
 
@@ -37,8 +40,8 @@
     (reset! table-contents
             (:body (<! (http/post "/api/get-documents" {:edn-params params}))))))
 
-(defn table-params [{:keys [page rows-per-page filters]}]
-  {:offset (* page rows-per-page), :limit rows-per-page, :filters filters})
+(defn table-params [{:keys [page rows-per-page filters phrase]}]
+  {:offset (* page rows-per-page), :limit rows-per-page, :filters filters, :phrase phrase})
 
 (def search-params (atom {:page 0, :rows-per-page 10, :filters {}}))
 (def table-state (atom {:shown-filter nil}))
@@ -120,6 +123,7 @@
   (let [{:keys [shown-filter]} @state]
     [:div
      [:h1 "Lista dokumentów"]
+     [search]
      [:p
       [:a {:href "#" :on-click #(update-table-params :page dec)} "Poprzednie"]
       [:a {:href "#" :on-click #(update-table-params :page inc)} "Następne"]]
@@ -135,7 +139,7 @@
       [:tbody (for [row @table-contents]
                 [:tr
                  [:td [:a {:href "#" :on-click #(do (reset! current-document (row-key row))
-                                                    (reset! current-page 2))} "Zobacz"]]
+                                                    (reset! current-page 1))} "Zobacz"]]
                  (for [cell row]
                    [:td cell])])]]]))
 
@@ -146,14 +150,10 @@
      [:iframe {:width "100%" :height "100%" :src (str "/corpus/" @state)}]
      [:h2 "Brak dokumentu do wyświetlenia."])])
 
-(defn search []
-  [:h1 "Tu będzie wyszukiwarka."])
-
 (defn root [header]
   [navbar current-page
-   "Dokumenty" [table2 header table-state]
-   "Wyszukiwanie" [search]
-   "Wyniki" [document-browser current-document]])
+   "Lista dokumentów" [table2 header table-state]
+   "Przeglądanie" [document-browser current-document]])
 
 (defn mount-root []
   (go
