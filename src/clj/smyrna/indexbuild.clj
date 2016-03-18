@@ -6,7 +6,7 @@
            [java.util Arrays]))
 
 (defn build-lemma-index
-  [corpus {:keys [lemmata lemmatizer]}]
+  [{:keys [lemmata lemmatizer], :as corpus}]
   (let [num-words (:word (:counts corpus))
         occurrences (reduce
                      (fn [acc i]

@@ -25,16 +25,18 @@
     arr))
 
 (defn int-subbuffer
-  [^ByteBuffer buf {:keys [offset length]}]
-  (.position buf offset)
-  (doto (.asIntBuffer buf)
-    (.limit (/ length 4))))
+  [^ByteBuffer buf {:keys [offset length] :as desc}]
+  (when desc
+    (.position buf offset)
+    (doto (.asIntBuffer buf)
+      (.limit (/ length 4)))))
 
 (defn long-subbuffer
-  [^ByteBuffer buf {:keys [offset length]}]
-  (.position buf offset)
-  (doto (.asLongBuffer buf)
-    (.limit (/ length 8))))
+  [^ByteBuffer buf {:keys [offset length] :as desc}]
+  (when desc
+    (.position buf offset)
+    (doto (.asLongBuffer buf)
+      (.limit (/ length 8)))))
 
 (defn read-meta
   [arr]
@@ -54,37 +56,58 @@
   [corpus]
   (assoc corpus :key-index (meta/create-key-index (:meta corpus))))
 
+(defn lemmatize-words
+  [corpus]
+  (let [words (take-while #(= (first %) :word) (:tokens corpus))
+        lemmata (-> (map #(-> % second polelum/lemmatize) words) distinct sort vec)
+        enum (enumerate lemmata)]
+    {:lemmata lemmata,
+     :lemmatizer (mapv (comp enum polelum/lemmatize second) words)}))
+
+(defn read-dict
+  [elems buf type]
+  (let [elem-name (format "%s.fsa" (name type))
+        elem (elems elem-name)]
+    (when elem
+      (fsa/strings (fsa/read (buffer-part buf elem))))))
+
+(defn add-lemmata
+  [{:keys [elems buf] :as corpus}]
+  (if-let [lemmata (read-dict elems buf :lemmata)]
+    (assoc corpus :lemmata lemmata :lemmatizer (int-subbuffer buf (elems "lemmatizer")))
+    (merge corpus (lemmatize-words corpus))))
+
+
+
 (defn open
   [f]
   (let [buf (nio/mmap f)]
     (nio/set-byte-order! buf :little-endian)
     (let [elems (container/read-entries buf)
-          read-dict (fn [type]
-                      (let [elem-name (format "%s.fsa" (name type))
-                            elem (elems elem-name)]
-                        (fsa/strings (fsa/read (buffer-part buf elem)))))
           read-token-dict (fn [type]
                             (mapv (partial vector type)
-                                  (read-dict type)))
+                                  (read-dict elems buf type)))
           dict-keys [:word :text :attr :tag]
           dicts (map read-token-dict dict-keys)
           raw-meta-fn #(buffer-part buf (elems "meta.edn.gz"))]
       (nio/set-byte-order! buf :big-endian)
       (->
-       {:tokens (into (vec (apply concat dicts)) [:nospace :end])
+       {
+        :elems elems,
+        :buf buf,
+        :tokens (into (vec (apply concat dicts)) [:nospace :end])
         :counts (zipmap dict-keys (map count dicts))
         :raw-meta-fn raw-meta-fn
         :meta (read-meta (raw-meta-fn))
         :image (long-subbuffer buf (elems "image"))
         :index (long-subbuffer buf (elems "index"))
-        :lemmata (read-dict :lemmata)
-        :lemmatizer (int-subbuffer buf (elems "lemmatizer"))
         :offset (int-subbuffer buf (elems "offset"))
         :numl (int-subbuffer buf (elems "numl"))
         :first-code (int-subbuffer buf (elems "1stcode"))
         :symbols (int-subbuffer buf (elems "symbols"))}
        add-index-offsets
-       add-key-index))))
+       add-key-index
+       add-lemmata))))
 
 (defn take-while-global
   [pred coll]
@@ -150,14 +173,6 @@
      (= (first (first s)) :tag) (recur (next s) (conj tags (second (first s))) text false)
      (nil? (first s)) (str text)
      :otherwise (recur (next s) tags text false))))
-
-(defn lemmatize-words
-  [corpus]
-  (let [words (take-while #(= (first %) :word) (:tokens corpus))
-        lemmata (-> (map #(-> % second polelum/lemmatize) words) distinct sort vec)
-        enum (enumerate lemmata)]
-    {:lemmata lemmata,
-     :lemmatizer (mapv (comp enum polelum/lemmatize second) words)}))
 
 (defn rle-append
   [rle n]
