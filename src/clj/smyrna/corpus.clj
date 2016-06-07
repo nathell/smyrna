@@ -73,11 +73,9 @@
 
 (defn add-lemmata
   [{:keys [elems buf] :as corpus}]
-  (if-let [lemmata (read-dict elems buf :lemmata)]
-    (assoc corpus :lemmata lemmata :lemmatizer (int-subbuffer buf (elems "lemmatizer")))
-    (merge corpus (lemmatize-words corpus))))
-
-
+  (assoc corpus
+         :lemmata (read-dict elems buf :lemmata)
+         :lemmatizer (int-subbuffer buf (elems "lemmatizer"))))
 
 (defn open
   [f]
@@ -104,10 +102,13 @@
         :offset (int-subbuffer buf (elems "offset"))
         :numl (int-subbuffer buf (elems "numl"))
         :first-code (int-subbuffer buf (elems "1stcode"))
-        :symbols (int-subbuffer buf (elems "symbols"))}
+        :symbols (int-subbuffer buf (elems "symbols"))
+        :lemmata (read-dict elems buf :lemmata)
+        :lemmatizer (int-subbuffer buf (elems "lemmatizer"))}
+       add-lemmata
        add-index-offsets
        add-key-index
-       add-lemmata))))
+       ))))
 
 (defn take-while-global
   [pred coll]
@@ -116,6 +117,9 @@
      (let [s (seq coll)]
        (when s
          (cons (first s) (take-while-global pred (rest s))))))))
+
+(defn decode-document [corpus doc]
+  (mapv (:tokens corpus) doc))
 
 (defn read-document [corpus i & {:keys [lookup], :or {lookup true}}]
   (let [^IBitSource bs (bitstream/bit-source (:image corpus))
@@ -195,10 +199,29 @@
   (reduce (fn [acc n] (update-in! acc [n] rle-append i))
           v seq))
 
+(defn doc-lemma
+  [{:keys [^java.nio.IntBuffer lemmatizer counts] :as corpus} doc]
+  (mapv
+   (fn [^long i] (if (< i (:word (:counts corpus))) (.get lemmatizer i) -1))
+   doc))
+
 (defn contains-phrase?
   [{:keys [^java.nio.IntBuffer lemmatizer counts] :as corpus} phrase i]
   (if (= (count phrase) 1)
     true
     (let [doc (read-document corpus i :lookup false)
-          docl (mapv (fn [^long i] (if (< i (:word (:counts corpus))) (.get lemmatizer i) -1)) doc)]
+          docl (doc-lemma corpus doc)]
       (not= (Collections/indexOfSubList docl (mapv int phrase)) -1))))
+
+;; From http://stackoverflow.com/questions/15223942
+(defn find-pos
+  [sq sub]
+  (->> (partition (count sub) 1 sq)
+       (map-indexed vector)
+       (filter #(= (second %) sub))
+       (map first)))
+
+(defn phrase-positions
+  [corpus phrase doc]
+  (let [docl (doc-lemma corpus doc)]
+    (find-pos docl phrase)))

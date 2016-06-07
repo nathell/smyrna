@@ -1,3 +1,5 @@
+/* Palette from http://www.colourlovers.com/palette/452030/you_will_be_free */
+
 html, body {
     margin: 0;
     padding: 0;
@@ -15,13 +17,13 @@ body {
 }
 
 .nav {
-    margin: 0;
+    margin: 0 0 1rem 0;
     padding: 0;
-    background: #ccc;
+    background: #cbdbe0;
     font: 14pt Arial;
     color: #333;
     height: 40px;
-    border-bottom: 1px solid black;
+    border-bottom: 1px solid #bed2d9;
 }
 
 .nav li {
@@ -30,8 +32,18 @@ body {
     margin: 0;
     padding: 0 10px;
     line-height: 40px;
-    border-left: 1px solid #ccc;
-    border-right: 1px solid #ccc;
+    border-left: 1px solid #bed2d9;
+    border-right: 1px solid #bed2d9;
+}
+
+a {
+    text-decoration: none;
+    font-weight: bold;
+    color: #667174;
+}
+
+a:hover {
+    text-decoration: underline;
 }
 
 .nav li a {
@@ -46,7 +58,35 @@ body {
 }
 
 .nav li.selected {
-    background: #edc;
-    border-left: 1px solid black;
-    border-right: 1px solid black;
+    background: #ecf1f2;
+    border-left: 1px solid #bed2d9;
+    border-right: 1px solid #bed2d9;
+}
+
+.documents-container {
+    width: 90%;
+    margin: 0 auto;
+}
+
+.documents {
+    border-collapse: collapse;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.documents thead tr {
+    background: #dce8eb;
+}
+
+.documents tbody tr:nth-child(even) {
+    background: #ecf1f2;
+}
+
+.documents tbody tr:nth-child(odd) {
+    background: #f7f9fe;
+}
+
+.documents td, .documents th {
+    border: none;
+    padding: 5px;
 }

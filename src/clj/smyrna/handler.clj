@@ -10,7 +10,8 @@
             [clojure.java.io :as io]
             [environ.core :refer [env]]))
 
-(def corpus (corpus/open "p4corpus.zip"))
+; (def corpus (corpus/open "p4corpus.zip"))
+(def corpus (corpus/open "corpus8.zip"))
 
 (def loading-page
   (html5
@@ -46,6 +47,11 @@
                                              (edn-response "OK")))
   (POST "/api/compare-contexts" {body :body} (let [[c1 c2] (edn/read-string (slurp body))]
                                                (edn-response (search/compare-contexts corpus c1 c2))))
+  (POST "/api/get-document"
+        {body :body}
+        (let [{:keys [i phrase]} (edn/read-string (slurp body))
+              doc (corpus/read-document corpus i :lookup false)]
+          (edn-response (corpus/deserialize (search/highlight-doc corpus doc phrase)))))
   (GET "/corpus/*" [*]
        (let [k *
              k (if (.endsWith k ".html")

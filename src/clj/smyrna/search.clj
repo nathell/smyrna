@@ -12,18 +12,39 @@
       (.scroll bs ((:index-offsets corpus) lemma))
       (index/read-index-entry bs (corpus/num-documents corpus)))))
 
+(defn lemma
+  [corpus word]
+  (.indexOf (:lemmata corpus) word))
+
+(defn phrase-lemmata
+  [corpus phrase]
+  (map (partial lemma corpus) (string/split phrase #" ")))
+
 (defn search-word
   [corpus word]
-  (search-lemma corpus (.indexOf (:lemmata corpus) word)))
+  (search-lemma corpus (lemma corpus word)))
 
 (defn search-phrase
   [corpus phrase within]
-  (let [words (string/split phrase #" ")
-        lemmata (map #(.indexOf (:lemmata corpus) %) words)
+  (let [lemmata (phrase-lemmata corpus phrase)
         candidates (map (comp set (partial search-lemma corpus)) lemmata)
         candidates (if within (conj candidates (set within)) candidates)]
     (filter (partial corpus/contains-phrase? corpus lemmata)
             (sort (apply intersection candidates)))))
+
+(defn highlight-doc
+  [{:keys [tokens] :as corpus} doc phrase]
+  (let [lemmata (phrase-lemmata corpus phrase)
+        l (count lemmata)
+        starts (set (corpus/phrase-positions corpus lemmata doc))
+        ends (set (map (partial + l) starts))]
+    (reduce (fn [acc [i segment]]
+              ((comp ; order here is last-to-first!
+                #(conj % (tokens segment))
+                (if (starts i) #(into % [[:tag "span"] [:attr "class"] [:text "match"]]) identity)
+                (if (ends i) #(conj % :end) identity))
+               acc))
+            [] (map-indexed vector doc))))
 
 (defn filter-fn
   [header-indexed valsets [k v]]

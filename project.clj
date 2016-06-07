@@ -7,6 +7,7 @@
                  [nio "1.0.3"]
                  [clj-tagsoup "0.3.0" :exclusions [org.clojure/clojure]]
                  [polelum "0.1.0-SNAPSHOT"]
+                 [com.taoensso/timbre "4.1.4"]
                  [org.clojure/data.csv "0.1.3"]
                  [org.clojure/core.memoize "0.5.8"]
                  [org.carrot2/morfologik-fsa-builders "2.0.1"]

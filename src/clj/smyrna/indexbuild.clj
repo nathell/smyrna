@@ -35,3 +35,8 @@
         (bitstream/write-gamma bs cnt)
         (doseq [n (diffs part)]
           (bitstream/write-golomb bs n b))))))
+
+(defn build-and-save-index
+  [corpus out]
+  (let [idx (build-lemma-index corpus)]
+    (write-index out idx (corpus/num-documents corpus))))

@@ -31,6 +31,11 @@
     (every? datable? values) :date
     :otherwise :string))
 
+(defn drop-columns [columns-to-drop [header & data :as csv]]
+  (let [column-ids (remove nil? (map-indexed #(when-not (columns-to-drop %2) %1) header))]
+    (for [row (map vec csv)]
+      (mapv row column-ids))))
+
 (defn as-dictionaries [[header & data]]
   (let [valsets (mapv (fn [i] (sort (distinct (map #(% i) data)))) (range (count header)))
         enums (map #(zipmap % (range)) valsets)]

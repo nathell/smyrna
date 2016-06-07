@@ -12,6 +12,18 @@
 (def current-page (atom 0))
 (def current-document (atom nil))
 
+;; Generic textbox
+
+(defn textbox [state & {:keys [caption placeholder value on-change],
+                        :or {caption "Change"}}]
+  (let [id (gensym)
+        value (or value @state)
+        on-change (comp (or on-change (partial reset! state))
+                        #(.-value (js/getElementById id)))]
+    [:div
+     [:input {:id id, :placeholder placeholder, :type "text" :value value}]
+     [:button {:on-click on-change} caption]]))
+
 ;; Navbar
 
 (defn navbar [active & labels-and-components]
@@ -61,17 +73,23 @@
     (refresh-table (table-params @search-params))))
 
 (defn search []
-  [:div
-   [:input {:type "text", :placeholder "Wpisz szukaną frazę",
-            :on-change #(update-table-params :phrase (-> % .-target .-value)),
-            :value (:phrase @search-params)}]
-   "Obszar: "
-   (into [:select
-          {:on-change #(update-table-params :within (-> % .-target .-value))}
-          [:option "Cały korpus"]]
-         (for [[opt _] @contexts]
-           [:option {:value opt, :selected (= (:within @search-params) opt)} opt]))
-   [:button {:on-click #(do (reset! search-params initial-search-params) (refresh-table (table-params @search-params)))} "Resetuj filtry"]])
+  (let [text-id (gensym) select-id (gensym)]
+    [:div
+     [:input {:type "text", :id text-id, :placeholder "Wpisz szukaną frazę",
+              #_:value #_(:phrase @search-params)}]
+     "Obszar: "
+     (into [:select {:id select-id}
+            [:option "Cały korpus"]]
+           (for [[opt _] @contexts]
+             [:option {:value opt, :selected (= (:within @search-params) opt)} opt]))
+     [:button
+      {:on-click (fn [& _]
+                   (swap! search-params assoc
+                          :phrase (.-value (.getElementById js/document text-id))
+                          :within (.-value (.getElementById js/document select-id)))
+                   (refresh-table (table-params @search-params)))}
+      "Szukaj"]
+     [:button {:on-click #(do (reset! search-params initial-search-params) (refresh-table (table-params @search-params)))} "Resetuj filtry"]]))
 
 (defn toggle [set el]
   ((if (set el) disj conj) set el))
@@ -100,6 +118,7 @@
       [:button {:on-click #(swap! table-state update-in [:shown-filter] (constantly nil))} "OK"]]])))
 
 (defn filter-text [key state]
+#_  [:div]
   [:input {:type "text"
            :value (get-in @search-params [:filters key])
            :on-change #(update-table-params [:filters key] (-> % .-target .-value))}])
@@ -154,14 +173,13 @@
 
 (defn table2 [header state]
   (let [{:keys [shown-filter]} @state]
-    [:div
-     [:h1 "Lista dokumentów"]
+    [:div {:class "documents-container"}
      [search]
      [context-creator]
      [:p
       [:a {:href "#" :on-click #(update-table-params :page dec)} "Poprzednie"]
       [:a {:href "#" :on-click #(update-table-params :page inc)} "Następne"]]
-     [:table
+     [:table {:class "documents"}
       [:thead
        (vec (concat [:tr]
                     [[:th "Akcje"]]
