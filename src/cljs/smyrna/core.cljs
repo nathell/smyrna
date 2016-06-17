@@ -190,7 +190,7 @@
                          [make-filter col valset search-params])])))]
       [:tbody (for [row @table-contents]
                 [:tr
-                 [:td [:a {:href "#" :on-click #(do (reset! current-document (row-key row))
+                 [:td [:a {:href "#" :on-click #(do (reset! current-document [(:phrase @search-params) (row-key row)])
                                                     (reset! current-page 1))} "Zobacz"]]
                  (for [cell row]
                    [:td cell])])]]]))
@@ -198,8 +198,11 @@
 (defn document-browser [state]
   [:div {:class "nav-container"}
    [:h1 "Dokument"]
-   (if @state
-     [:iframe {:width "100%" :height "100%" :src (str "/corpus/" @state)}]
+   (if-let [[phrase link] @state]
+     [:iframe {:width "100%" :height "50%" :src
+               (if phrase
+                 (str "/highlight/" phrase "/" link)
+                 (str "/corpus/" link))}]
      [:h2 "Brak dokumentu do wyświetlenia."])])
 
 (def wordcloud-data (atom nil))

@@ -8,6 +8,7 @@
             [smyrna.meta :as meta]
             [compojure.core :refer [GET POST defroutes]]
             [clojure.java.io :as io]
+            [taoensso.timbre :refer [infof]]
             [environ.core :refer [env]]))
 
 ; (def corpus (corpus/open "p4corpus.zip"))
@@ -35,6 +36,14 @@
   ([x] (edn-response {} x))
   ([extra-header x] (edn-response-raw extra-header (pr-str x))))
 
+(def styles
+  "<style>
+.didaskalia::before { content: \" \"; }
+.didaskalia::after { content: \" \"; }
+.didaskalia { font-style: italic; }
+.match { background-color: yellow; margin: 0 5px; }
+</style>")
+
 (defroutes routes
   (GET "/" [] loading-page)
   (GET "/meta-header" [] (edn-response (meta/get-header (:meta corpus))))
@@ -47,11 +56,12 @@
                                              (edn-response "OK")))
   (POST "/api/compare-contexts" {body :body} (let [[c1 c2] (edn/read-string (slurp body))]
                                                (edn-response (search/compare-contexts corpus c1 c2))))
-  (POST "/api/get-document"
-        {body :body}
-        (let [{:keys [i phrase]} (edn/read-string (slurp body))
-              doc (corpus/read-document corpus i :lookup false)]
-          (edn-response (corpus/deserialize (search/highlight-doc corpus doc phrase)))))
+  (GET "/highlight/:phrase/*" [phrase *]
+       (let [i ((:key-index corpus) *)]
+         (when i
+           (let [doc (corpus/read-document corpus i :lookup false)]
+             (str styles
+                  (html (corpus/deserialize (search/highlight-doc corpus doc phrase))))))))
   (GET "/corpus/*" [*]
        (let [k *
              k (if (.endsWith k ".html")
@@ -59,6 +69,7 @@
                  k)
              i ((:key-index corpus) k)]
          (when i
-           (html (corpus/deserialize (corpus/read-document corpus i)))))))
+           (str styles
+                (html (corpus/deserialize (corpus/read-document corpus i))))))))
 
 (def app (wrap-middleware #'routes))
