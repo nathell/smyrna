@@ -3,7 +3,8 @@
             [clojure.set :refer [union intersection]]
             [smyrna.bitstream :as bitstream]
             [smyrna.corpus :as corpus]
-            [smyrna.index :as index]))
+            [smyrna.index :as index]
+            [smyrna.meta :as meta]))
 
 (defn search-lemma
   [corpus lemma]
@@ -99,7 +100,7 @@
   [corpus {:keys [offset limit], :or {offset 0, limit 10}, :as q}]
   (let [documents (map second (get-documents-raw corpus q))
         [_ _ valsets _] (:meta corpus)
-        decode-row (fn [row] (mapv #(nth %1 %2) valsets row))]
+        decode-row (fn [row] (let [res (mapv #(nth %1 %2) valsets row)] (into [(meta/row-key res)] res)))]
     {:results (mapv decode-row (take limit (drop offset documents))),
      :total (delay (count documents))}))
 

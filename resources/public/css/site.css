@@ -90,3 +90,8 @@ a:hover {
     border: none;
     padding: 5px;
 }
+
+.pagination {
+    display: flex;
+    justify-content: space-between;
+}
