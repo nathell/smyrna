@@ -23,3 +23,15 @@
 (defn dispatch-value
   [ev]
   #(dispatch [ev (-> % .-target .-value)]))
+
+;; common components:
+
+(defn area-selector
+  ([dispatcher] (area-selector dispatcher "Cały korpus"))
+  ([dispatcher nil-name]
+   (let [contexts (subscribe [:contexts])]
+     (fn render-area-selector []
+       (into [:select {:on-change (dispatch-value dispatcher)}
+              [:option nil-name]]
+             (for [[opt _] @contexts]
+               [:option {:value opt} opt]))))))

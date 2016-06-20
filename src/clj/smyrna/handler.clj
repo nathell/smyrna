@@ -8,6 +8,7 @@
             [smyrna.meta :as meta]
             [compojure.core :refer [GET POST defroutes]]
             [clojure.java.io :as io]
+            [clojure.data.csv :as csv]
             [taoensso.timbre :refer [infof]]
             [environ.core :refer [env]]))
 
@@ -54,6 +55,14 @@
         (edn-response
          {:metadata (meta/get-header (:meta corpus)),
           :contexts (vec (sort-by first (map (fn [[k v]] [k (:description v)]) @search/contexts)))}))
+  (GET "/frequency-list/:area" [area]
+        {:status 200,
+         :headers {"Content-Type" "text/csv; charset=utf-8",
+                   "Content-Disposition" (format "attachment; filename=\"lista-frekwencyjna-%s.csv\"" area)},
+         :body (with-out-str (csv/write-csv *out* (search/frequency-list corpus area)))})
+  (POST "/api/frequency-list" {body :body}
+        (let [{:keys [context offset limit]} (edn/read-string (slurp body))]
+          (edn-response (search/frequency-list corpus context limit offset))))
   (POST "/api/get-contexts" [] (edn-response (vec (sort-by first (map (fn [[k v]] [k (:description v)]) @search/contexts))))) ;; OBSOLETE
   (POST "/api/create-context" {body :body} (let [{:keys [name description]} (edn/read-string (slurp body))]
                                              (search/create-context corpus name description)

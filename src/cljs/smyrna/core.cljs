@@ -1,10 +1,10 @@
 (ns smyrna.core
-  (:require-macros [reagent.ratom  :refer [reaction]])
   (:require [re-frame.core :as re-frame :refer [register-handler path register-sub dispatch dispatch-sync subscribe]]
             [reagent.core :as reagent]
             [smyrna.utils :refer [register-accessors dispatch-value]]
             [smyrna.document-table :refer [document-table]]
             [smyrna.wordcloud :refer [wordcloud]]
+            [smyrna.freq :refer [frequency-lists]]
             [smyrna.api :as api]))
 
 (def meta-location "/meta")
@@ -13,7 +13,9 @@
 
 (def initial-state
   {:tab 0,
-   :document-filter {:page 0, :rows-per-page 10, :filters {}}})
+   :document-filter {:page 0, :rows-per-page 10, :filters {}},
+   :frequency-list-offset 0,
+   :frequency-list-limit 25})
 
 (defn load-metadata
   []
@@ -57,14 +59,12 @@
                      (str "/corpus/" link))}]
          [:h2 "Brak dokumentu do wyświetlenia."])])))
 
-(defn goodbye []
-  [:h1 "Goodbye, world!"])
-
 (defn root []
   [tabbar
    "Wyszukiwanie" [document-table]
    "Dokumenty" [document-browser]
-   "Chmury słów" [wordcloud]])
+   "Chmury słów" [wordcloud]
+   "Listy frekwencyjne" [frequency-lists]])
 
 (defn mount-root []
   (dispatch-sync [:initialize])

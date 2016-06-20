@@ -110,6 +110,9 @@
          {:description desc,
           :documents (map first (get-documents-raw corpus desc))}))
 
+(defn alnum? [w]
+  (re-find #"[\p{L}0-9]" w))
+
 (defn count-lexemes
   [{:keys [lemmata ^java.nio.IntBuffer lemmatizer counts] :as corpus} docs]
   (let [^longs arr (make-array Long/TYPE (count lemmata))
@@ -139,6 +142,14 @@
 (def count-context
   (memoize (fn [corpus context-name]
              (count-lexemes corpus (get-context corpus context-name)))))
+
+(defn frequency-list
+  ([corpus context-name]
+   (let [counts (count-context corpus context-name)]
+     (filter (comp alnum? first)
+             (sort-by second > (map vector (:lemmata corpus) counts)))))
+  ([corpus context-name limit offset]
+   (take limit (drop offset (frequency-list corpus context-name)))))
 
 (defn compare-contexts
   [corpus c1 c2]

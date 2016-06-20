@@ -3,7 +3,7 @@
   (:require [reagent.core :as reagent]
             [re-frame.core :as re-frame :refer [register-handler path register-sub dispatch dispatch-sync subscribe]]
             [smyrna.api :as api]
-            [smyrna.utils :refer [register-accessors dispatch-value]]))
+            [smyrna.utils :refer [register-accessors dispatch-value area-selector]]))
 
 (register-accessors :wordcloud-area :wordcloud-data)
 
@@ -49,14 +49,6 @@
         (.on "end" draw)
         (.start))))
 
-(defn area-selector []
-  (let [contexts (subscribe [:contexts])]
-    (fn render-area-selector []
-      (into [:select {:on-change (dispatch-value :set-wordcloud-area)}
-             [:option "[Wybierz obszar]"]]
-            (for [[opt _] @contexts]
-              [:option {:value opt} opt])))))
-
 (register-handler :update-wordcloud
                   (fn [state _]
                     (api/call "compare-contexts" [(:wordcloud-area state) nil] #(dispatch [:set-wordcloud-data %]))
@@ -74,6 +66,6 @@
 
 (defn wordcloud []
   [:div
-   [area-selector]
+   [area-selector :set-wordcloud-area "[Wybierz obszar]"]
    [:button {:on-click #(dispatch [:update-wordcloud])} "Pokaż"]
    [displayer]])
