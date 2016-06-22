@@ -117,3 +117,41 @@
               _ (infof "Inverting index...")
               ^longs arr (doto (into-array Long/TYPE inv) Arrays/sort)]
           (write-index (str outdir "/index") arr num-documents))))))
+
+(defn temp-dir
+  [prefix]
+  (.toFile (java.nio.file.Files/createTempDirectory prefix (into-array java.nio.file.attribute.FileAttribute []))))
+
+(defn slurp-bytes
+  "Slurp the bytes from a slurpable thing"
+  [x]
+  (with-open [out (java.io.ByteArrayOutputStream.)]
+    (io/copy (io/input-stream x) out)
+    (.toByteArray out)))
+
+(defn crc32
+  [f]
+  (let [crc (java.util.zip.CRC32.)]
+    (.update crc (slurp-bytes f))
+    (.getValue crc)))
+
+(defn pack
+  [dir out]
+  (with-open [f (java.util.zip.ZipOutputStream. (io/output-stream out))]
+    (.setMethod f java.util.zip.ZipOutputStream/STORED)
+    (doseq [el (.listFiles (io/file dir))
+            :let [entry (java.util.zip.ZipEntry. (.getName el))
+                  sz (.length el)]]
+      (.setSize entry sz)
+      (.setCompressedSize entry sz)
+      (.setCrc entry (crc32 el))
+      (.putNextEntry f entry)
+      (with-open [src (io/input-stream el)]
+        (io/copy src f)))))
+
+(defn build-corpus-file
+  [metafile out]
+  (let [dir (temp-dir "corpus")]
+    (prn dir)
+    (build-corpus metafile dir)
+    (pack dir out)))

@@ -11,19 +11,44 @@ html, body {
 }
 
 body {
-    position: relative;
+    font: 14pt Arial, Helvetica;
     overflow: hidden;
-    font: 12pt Arial, Helvetica;
+}
+
+.nav-container {
+    display: flex;
+    flex-flow: column;
 }
 
 .nav {
-    margin: 0 0 1rem 0;
+    margin: 0;
     padding: 0;
     background: #cbdbe0;
     font: 14pt Arial;
     color: #333;
     height: 40px;
     border-bottom: 1px solid #bed2d9;
+}
+
+.navbar-0, .about h1 {
+    font-weight: bold;
+    font-style: italic;
+    font-family: Times New Roman, Times;
+}
+
+.about h1 {
+    text-align: center;
+}
+
+.about p {
+    text-align: justify;
+}
+
+.tab {
+    flex: 1;
+    margin: 0;
+    overflow: auto;
+    padding: 1em;
 }
 
 .nav li {
@@ -94,4 +119,60 @@ a:hover {
 .pagination {
     display: flex;
     justify-content: space-between;
+}
+
+.corpora {
+    overflow: auto;
+}
+
+.modal-dialog {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 99999;
+    opacity: 0;
+    transition: opacity 200ms ease-in;
+    pointer-events: none;
+}
+
+.modal-visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.modal-dialog > div {
+    width: 600px;
+    position: relative;
+    margin: 10% auto;
+    padding: 5px 20px 13px 20px;
+    border-radius: 10px;
+    background: #fff;
+    background: linear-gradient(#fff, #999);
+}
+
+.modal-dialog .close {
+    background: #606061;
+    color: #FFFFFF;
+    line-height: 37px;
+    font-size: 20px;
+    position: absolute;
+    right: -18px;
+    text-align: center;
+    top: -15px;
+    width: 36px;
+    text-decoration: none;
+    font-weight: bold;
+    border-radius: 36px;
+    box-shadow: 1px 1px 3px #000;
+}
+
+.modal-dialog .close:hover {
+    background: #00d9ff;
+}
+
+.modal-disabled {
+    pointer-events: none;
 }

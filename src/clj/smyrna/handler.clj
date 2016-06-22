@@ -21,10 +21,12 @@
     [:meta {:charset "utf-8"}]
     [:meta {:name "viewport"
             :content "width=device-width, initial-scale=1"}]
+    [:title "Smyrna"]
     (include-css (if (env :dev) "css/site.css" "css/site.min.css"))]
     [:body
      [:div#app
-      [:h1 "Loading Smyrna, please wait..."]]
+      [:div {:style "display: flex; height: 100%;"}
+       [:h1 {:style "margin: auto;"} "Trwa uruchamianie Smyrny, proszę czekać..."]]]
      (include-js "js/d3.js")
      (include-js "js/d3.layout.cloud.js")
      (include-js "js/app.js")]))
@@ -44,6 +46,16 @@
 .didaskalia { font-style: italic; }
 .match { background-color: yellow; margin: 0 5px; }
 </style>")
+
+(defn files
+  [dir]
+  (->>
+   (for [f (.listFiles (io/file dir))
+         :let [name (.getName f)
+               dir? (.isDirectory f)]
+         :when (or dir? (.endsWith name ".csv"))]
+     {:file name, :dir (.isDirectory f)})
+   (sort-by :file)))
 
 (defroutes routes
   (GET "/" [] loading-page)
@@ -69,6 +81,8 @@
                                              (edn-response "OK")))
   (POST "/api/compare-contexts" {body :body} (let [[c1 c2] (edn/read-string (slurp body))]
                                                (edn-response (search/compare-contexts corpus c1 c2))))
+  (POST "/api/tree" {body :body} (let [path (edn/read-string (slurp body))]
+                                   (edn-response (files path))))
   (GET "/highlight/:phrase/*" [phrase *]
        (let [i ((:key-index corpus) *)]
          (when i
