@@ -22,7 +22,7 @@
 
 (defn dispatch-value
   [ev]
-  #(dispatch [ev (-> % .-target .-value)]))
+  #(dispatch-sync [ev (-> % .-target .-value)]))
 
 ;; common components:
 

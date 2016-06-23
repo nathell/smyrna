@@ -7,6 +7,8 @@
             [smyrna.bitstream :as bitstream]
             [smyrna.meta :as meta]
             [smyrna.fsa :as fsa]
+            [smyrna.task :as task]
+            [smyrna.corpus :refer [corpora-path]]
             [taoensso.timbre :refer [infof]]
             [pl.danieljanus.tagsoup :as tagsoup])
   (:import [smyrna.bitstream IBitSink]
@@ -32,18 +34,19 @@
   (-> metafile io/file .getCanonicalFile .getParent (str "/")))
 
 (defn total-frequencies [metafile]
+  (task/set-info "Trwa zliczanie częstości słów...")
   (let [prefix (corpus-dir metafile)
         files (map #(str prefix (:file %)) (read-csv-df metafile))]
     {:num-documents (count files)
      :freqs (apply merge-with + (map (comp frequencies vec html/serialize-tree tagsoup/parse) files))}))
 
 (defn save-dicts [outdir vocab]
+  (task/set-info "Trwa generowanie słowników...")
   (let [vocab (filter vector? vocab)
         grouped (group-by first vocab)
         grouped (into {} (for [[k v] grouped] [k (sort-by second v)]))
         {:keys [attr word text tag]} grouped]
     (doseq [[k v] grouped]
-      (infof "Saving %s..." k)
       (fsa/serialize (fsa/build (map second v)) (format "%s/%s.fsa" outdir (name k))))
     (vec (concat word text attr tag [:nospace :end]))))
 
@@ -54,6 +57,7 @@
 
 (defn lemmatize-words
   [tokens]
+  (task/set-info "Trwa lematyzacja słów...")
   (let [words (take-while #(= (first %) :word) tokens)
         lemmata (-> (map #(-> % second polelum/lemmatize) words) distinct sort vec)
         enum (enumerate lemmata)]
@@ -82,9 +86,12 @@
         (doseq [n (diffs part)]
           (bitstream/write-golomb bs n b))))))
 
+(defn precompute-encoding [vocab freq-vals]
+  (task/set-info "Trwa inicjalizacja procesu kompresji...")
+  (huffman/precompute-encoding vocab freq-vals))
+
 (defn build-corpus [metafile outdir]
   (io/make-parents (str outdir "/a"))
-  (infof "Gathering unique tokens...")
   (let [prefix (corpus-dir metafile)
         {:keys [num-documents freqs]} (total-frequencies metafile)
         vocab (save-dicts outdir (keys freqs))
@@ -93,15 +100,15 @@
         {:keys [lemmata lemmatizer]} (lemmatize-words vocab)]
     (fsa/serialize (fsa/build lemmata) (str outdir "/lemmata.fsa"))
     (dump-ints (str outdir "/lemmatizer") lemmatizer)
-    (let [{:keys [symbols numl first-code codes lengths index]} (huffman/precompute-encoding vocab freq-vals)]
+    (let [{:keys [symbols numl first-code codes lengths index]} (precompute-encoding vocab freq-vals)]
       (dump-ints (str outdir "/symbols") symbols)
       (dump-ints (str outdir "/numl") numl)
       (dump-ints (str outdir "/1stcode") first-code)
-      (infof "Saving metadata...")
+      (task/set-info "Trwa zapisywanie metadanych...")
       (with-open [f (io/writer (java.util.zip.GZIPOutputStream. (java.io.FileOutputStream. (str outdir "/meta.edn.gz"))))]
         (binding [*out* f]
           (prn (meta/as-dictionaries (meta/drop-columns #{"file"} (csv/read-csv (io/reader metafile)))))))
-      (infof "Building corpus image...")
+      (task/set-info "Trwa budowanie obrazu korpusu...")
       (with-open [corpus-image (bitstream/file-bit-sink (str outdir "/image"))
                   offset-file (java.io.DataOutputStream. (io/output-stream (str outdir "/offset")))]
         (let [inv (reduce (fn [inv [i entry]]
@@ -114,7 +121,7 @@
                                 (into inv (map #(+ i (bit-shift-left % 32)) lemmata)))))
                           (vector-of :long)
                           (map-indexed vector (read-csv-df metafile)))
-              _ (infof "Inverting index...")
+              _ (task/set-info "Trwa tworzenie indeksu odwrotnego...")
               ^longs arr (doto (into-array Long/TYPE inv) Arrays/sort)]
           (write-index (str outdir "/index") arr num-documents))))))
 
@@ -152,6 +159,11 @@
 (defn build-corpus-file
   [metafile out]
   (let [dir (temp-dir "corpus")]
-    (prn dir)
     (build-corpus metafile dir)
     (pack dir out)))
+
+(defn build
+  [corpus-name file]
+  (let [out-path (str corpora-path "/" corpus-name ".smyrna")]
+    (io/make-parents out-path)
+    (build-corpus-file file out-path)))

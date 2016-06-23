@@ -2,8 +2,10 @@
   (:require [hiccup.page :refer [include-js include-css html5]]
             [hiccup.core :refer [html]]
             [smyrna.middleware :refer [wrap-middleware]]
+            [smyrna.build :as build]
             [smyrna.corpus :as corpus]
             [smyrna.search :as search]
+            [smyrna.task :as task]
             [clojure.edn :as edn]
             [smyrna.meta :as meta]
             [compojure.core :refer [GET POST defroutes]]
@@ -66,7 +68,10 @@
   (POST "/api/get-corpus-info" []
         (edn-response
          {:metadata (meta/get-header (:meta corpus)),
+          :corpora-list (corpus/list-corpora),
           :contexts (vec (sort-by first (map (fn [[k v]] [k (:description v)]) @search/contexts)))}))
+  (POST "/api/get-task-info" []
+        (edn-response (task/get-info)))
   (GET "/frequency-list/:area" [area]
         {:status 200,
          :headers {"Content-Type" "text/csv; charset=utf-8",
@@ -76,13 +81,20 @@
         (let [{:keys [context offset limit]} (edn/read-string (slurp body))]
           (edn-response (search/frequency-list corpus context limit offset))))
   (POST "/api/get-contexts" [] (edn-response (vec (sort-by first (map (fn [[k v]] [k (:description v)]) @search/contexts))))) ;; OBSOLETE
-  (POST "/api/create-context" {body :body} (let [{:keys [name description]} (edn/read-string (slurp body))]
-                                             (search/create-context corpus name description)
-                                             (edn-response "OK")))
-  (POST "/api/compare-contexts" {body :body} (let [[c1 c2] (edn/read-string (slurp body))]
-                                               (edn-response (search/compare-contexts corpus c1 c2))))
-  (POST "/api/tree" {body :body} (let [path (edn/read-string (slurp body))]
-                                   (edn-response (files path))))
+  (POST "/api/create-context" {body :body}
+        (let [{:keys [name description]} (edn/read-string (slurp body))]
+          (search/create-context corpus name description)
+          (edn-response "OK")))
+  (POST "/api/compare-contexts" {body :body}
+        (let [[c1 c2] (edn/read-string (slurp body))]
+          (edn-response (search/compare-contexts corpus c1 c2))))
+  (POST "/api/tree" {body :body}
+        (let [path (edn/read-string (slurp body))]
+          (edn-response (files path))))
+  (POST "/api/create-corpus" {body :body}
+        (let [{:keys [name file]} (edn/read-string (slurp body))]
+          (task/launch (build/build name file))
+          (edn-response "OK")))
   (GET "/highlight/:phrase/*" [phrase *]
        (let [i ((:key-index corpus) *)]
          (when i

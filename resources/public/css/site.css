@@ -36,10 +36,6 @@ body {
     font-family: Times New Roman, Times;
 }
 
-.about h1 {
-    text-align: center;
-}
-
 .about p {
     text-align: justify;
 }
@@ -150,7 +146,11 @@ a:hover {
     padding: 5px 20px 13px 20px;
     border-radius: 10px;
     background: #fff;
-    background: linear-gradient(#fff, #999);
+    background: linear-gradient(#fff, #ddd);
+}
+
+.modal-dialog h1, .modal-dialog h2 {
+    text-align: center;
 }
 
 .modal-dialog .close {
@@ -175,4 +175,47 @@ a:hover {
 
 .modal-disabled {
     pointer-events: none;
+}
+
+.button-container {
+    text-align: center;
+}
+
+button, input {
+    font-size: 14pt;
+}
+
+.directory-tree-container {
+    border: 1px inset #999;
+    background: white;
+    max-height: 400px;
+    overflow-y: scroll;
+    padding: 5px;
+}
+
+.directory-tree-container .file a {
+    font-weight: normal;
+    color: black;
+}
+
+
+ul.tree li.dir {
+    list-style-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAAS1BMVEUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADmYDp0AAAAGHRSTlMAAQIGCQsNDx4gOj0/S7K1t7m6wNXX8f27/IRqAAAASklEQVQYV73KOQ6AMBQDUcNn38Keuf9JKQhKBD2v88jSR2ZmebLbE/BjDHsjqSB+MEk6AMBPZQiy2+CeEBg/ha2zRD+rXkksld4udq4FLUYESkcAAAAASUVORK5CYII=);
+}
+
+ul.tree li.open-dir {
+    list-style-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAAdVBMVEUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB5WX1YAAAAJnRSTlMAAQIEBQkLEBMVFxocHR44R0xeZmimq7zAwdPV2drc4OTv8/n7/UAsp5IAAABtSURBVBgZjcHrDsFAFIXRb45RVKk7VeNuv/8jmkpOKvHHWvyyGI0v9S2l+5LedQiDBz0Z0KhzKMhkZKEz35HJcPYkkwHhIyoAMqaN3GuDrEwlbtyiyXmEi8cKXWY429fQrs0V2xVQneTSgn+8AS11CHH0tynzAAAAAElFTkSuQmCC);
+}
+
+ul.tree li.file {
+    list-style-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQBAMAAADt3eJSAAAALVBMVEUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADBoCg+AAAADnRSTlMAAQIGQEVYW3h5qLze66EVHzUAAAA+SURBVAhbY+B69+7d2wQGBgY+IyUluwgQQ4GBQY9lApTBEA5h8Lx7C2EwKNlBGUBJShnc70DgNZAjCAICDACFEhJjYGJUnAAAAABJRU5ErkJggg==);
+}
+
+.task {
+    text-align: center;
+}
+
+.task img {
+    display: block;
+    margin: 2em auto;
 }

@@ -77,6 +77,12 @@
          :lemmata (read-dict elems buf :lemmata)
          :lemmatizer (int-subbuffer buf (elems "lemmatizer"))))
 
+(defn num-documents-file
+  [f]
+  (let [buf (nio/mmap f)]
+    (nio/set-byte-order! buf :little-endian)
+    (/ (get-in (container/read-entries buf) ["offset" :length]) 4)))
+
 (defn open
   [f]
   (let [buf (nio/mmap f)]
@@ -225,3 +231,12 @@
   [corpus phrase doc]
   (let [docl (doc-lemma corpus doc)]
     (find-pos docl phrase)))
+
+(def corpora-path (format "%s/.smyrna" (System/getProperty "user.home")))
+
+(defn list-corpora []
+  (for [c (.listFiles (io/file corpora-path))
+        :when (.endsWith (str c) ".smyrna")
+        :let [name (.getName c)]]
+    {:name (subs name 0 (- (count name) 7)),
+     :num-documents (num-documents-file "/home/nathell/.smyrna/tadek.smyrna")}))

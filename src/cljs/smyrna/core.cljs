@@ -1,6 +1,7 @@
 (ns smyrna.core
   (:require [re-frame.core :as re-frame :refer [register-handler path register-sub dispatch dispatch-sync subscribe]]
             [reagent.core :as reagent]
+            [smyrna.task :as task]
             [smyrna.utils :refer [register-accessors dispatch-value]]
             [smyrna.corpora :refer [corpora] :as corpora]
             [smyrna.document-table :refer [document-table]]
