@@ -59,42 +59,26 @@
      {:file name, :dir (.isDirectory f)})
    (sort-by :file)))
 
+(defmacro api
+  [f params & body]
+  (let [url (str "/api/" (name f))
+        content `(edn-response (do ~@body))
+        req-body `body#]
+    `(POST ~url ~(if (not= params []) `{~req-body :body} [])
+           ~(if (not= params [])
+              `(let [~params (edn/read-string (slurp ~req-body))]
+                 ~content)
+              content))))
+
 (defroutes routes
   (GET "/" [] loading-page)
   (GET "/meta-header" [] (edn-response (meta/get-header (:meta corpus)))) ;; OBSOLETE
   (GET "/meta" [] (edn-response-raw {"Content-Encoding" "gzip"} (io/input-stream ((:raw-meta-fn corpus)))))
-  (POST "/api/get-documents" {body :body} (let [params (edn/read-string (slurp body))]
-                                            (edn-response (:results (search/get-documents corpus params)))))
-  (POST "/api/get-corpus-info" []
-        (edn-response
-         {:metadata (meta/get-header (:meta corpus)),
-          :corpora-list (corpus/list-corpora),
-          :contexts (vec (sort-by first (map (fn [[k v]] [k (:description v)]) @search/contexts)))}))
-  (POST "/api/get-task-info" []
-        (edn-response (task/get-info)))
   (GET "/frequency-list/:area" [area]
         {:status 200,
          :headers {"Content-Type" "text/csv; charset=utf-8",
                    "Content-Disposition" (format "attachment; filename=\"lista-frekwencyjna-%s.csv\"" area)},
          :body (with-out-str (csv/write-csv *out* (search/frequency-list corpus area)))})
-  (POST "/api/frequency-list" {body :body}
-        (let [{:keys [context offset limit]} (edn/read-string (slurp body))]
-          (edn-response (search/frequency-list corpus context limit offset))))
-  (POST "/api/get-contexts" [] (edn-response (vec (sort-by first (map (fn [[k v]] [k (:description v)]) @search/contexts))))) ;; OBSOLETE
-  (POST "/api/create-context" {body :body}
-        (let [{:keys [name description]} (edn/read-string (slurp body))]
-          (search/create-context corpus name description)
-          (edn-response "OK")))
-  (POST "/api/compare-contexts" {body :body}
-        (let [[c1 c2] (edn/read-string (slurp body))]
-          (edn-response (search/compare-contexts corpus c1 c2))))
-  (POST "/api/tree" {body :body}
-        (let [path (edn/read-string (slurp body))]
-          (edn-response (files path))))
-  (POST "/api/create-corpus" {body :body}
-        (let [{:keys [name file]} (edn/read-string (slurp body))]
-          (task/launch (build/build name file))
-          (edn-response "OK")))
   (GET "/highlight/:phrase/*" [phrase *]
        (let [i ((:key-index corpus) *)]
          (when i
@@ -109,6 +93,26 @@
              i ((:key-index corpus) k)]
          (when i
            (str styles
-                (html (corpus/deserialize (corpus/read-document corpus i))))))))
+                (html (corpus/deserialize (corpus/read-document corpus i)))))))
+  (api get-documents params
+       (:results (search/get-documents corpus params)))
+  (api get-corpus-info []
+       {:metadata (meta/get-header (:meta corpus)),
+        :corpora-list (corpus/list-corpora),
+        :contexts (vec (sort-by first (map (fn [[k v]] [k (:description v)]) @search/contexts)))})
+  (api get-task-info []
+       (task/get-info))
+  (api frequency-list {:keys [context offset limit]}
+       (search/frequency-list corpus context limit offset))
+  (api create-context {:keys [name description]}
+       (search/create-context corpus name description)
+       "OK")
+  (api compare-contexts [c1 c2]
+       (search/compare-contexts corpus c1 c2))
+  (api tree path
+       (files path))
+  (api create-corpus {:keys [name file]}
+       (task/launch (build/build name file))
+       "OK"))
 
 (def app (wrap-middleware #'routes))
