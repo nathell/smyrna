@@ -15,7 +15,18 @@
             [environ.core :refer [env]]))
 
 ; (def corpus (corpus/open "p4corpus.zip"))
-(def corpus (corpus/open "corpus8.zip"))
+; (def corpus (corpus/open "corpus8.zip"))
+
+(def corpora (atom {}))
+
+(defn getc
+  [x]
+  (when x ;; FIXME: corpus/open creates an empty corpus file
+    (or (@corpora x)
+        (let [path (format "%s/%s.smyrna" corpus/corpora-path x)
+              corpus (corpus/open path)]
+          (swap! corpora assoc x corpus)
+          corpus))))
 
 (def loading-page
   (html5
@@ -24,8 +35,8 @@
     [:meta {:name "viewport"
             :content "width=device-width, initial-scale=1"}]
     [:title "Smyrna"]
-    (include-css (if (env :dev) "css/site.css" "css/site.min.css"))]
-    [:body
+    (include-css (if (env :dev) "css/root.css" "css/root.min.css"))]
+   [:body
      [:div#app
       [:div {:style "display: flex; height: 100%;"}
        [:h1 {:style "margin: auto;"} "Trwa uruchamianie Smyrny, proszę czekać..."]]]
@@ -72,20 +83,18 @@
 
 (defroutes routes
   (GET "/" [] loading-page)
-  (GET "/meta-header" [] (edn-response (meta/get-header (:meta corpus)))) ;; OBSOLETE
-  (GET "/meta" [] (edn-response-raw {"Content-Encoding" "gzip"} (io/input-stream ((:raw-meta-fn corpus)))))
-  (GET "/frequency-list/:area" [area]
-        {:status 200,
-         :headers {"Content-Type" "text/csv; charset=utf-8",
-                   "Content-Disposition" (format "attachment; filename=\"lista-frekwencyjna-%s.csv\"" area)},
-         :body (with-out-str (csv/write-csv *out* (search/frequency-list corpus area)))})
-  (GET "/highlight/:phrase/*" [phrase *]
+  ;; (GET "/frequency-list/:area" [area]
+  ;;       {:status 200,
+  ;;        :headers {"Content-Type" "text/csv; charset=utf-8",
+  ;;                  "Content-Disposition" (format "attachment; filename=\"lista-frekwencyjna-%s.csv\"" area)},
+  ;;        :body (with-out-str (csv/write-csv *out* (search/frequency-list corpus area)))})
+  (GET "/highlight/:corpus/:phrase/*" [corpus phrase *]
        (let [i ((:key-index corpus) *)]
          (when i
            (let [doc (corpus/read-document corpus i :lookup false)]
              (str styles
                   (html (corpus/deserialize (search/highlight-doc corpus doc phrase))))))))
-  (GET "/corpus/*" [*]
+  (GET "/corpus/:corpus/*" [corpus *]
        (let [k *
              k (if (.endsWith k ".html")
                  (subs k 0 (- (count k) (count ".html")))
@@ -94,21 +103,23 @@
          (when i
            (str styles
                 (html (corpus/deserialize (corpus/read-document corpus i)))))))
+  (api get-corpora []
+       (corpus/list-corpora))
   (api get-documents params
-       (:results (search/get-documents corpus params)))
-  (api get-corpus-info []
-       {:metadata (meta/get-header (:meta corpus)),
+       (:results (search/get-documents (getc (:corpus params)) params)))
+  (api get-corpus-info {:keys [corpus]}
+       {:metadata (meta/get-header (:meta (getc corpus))),
         :corpora-list (corpus/list-corpora),
         :contexts (vec (sort-by first (map (fn [[k v]] [k (:description v)]) @search/contexts)))})
   (api get-task-info []
        (task/get-info))
-  (api frequency-list {:keys [context offset limit]}
-       (search/frequency-list corpus context limit offset))
-  (api create-context {:keys [name description]}
-       (search/create-context corpus name description)
+  (api frequency-list {:keys [context corpus]}
+       (search/frequency-list (getc corpus) context))
+  (api create-context {:keys [name description corpus]}
+       (search/create-context (getc corpus) name description)
        "OK")
-  (api compare-contexts [c1 c2]
-       (search/compare-contexts corpus c1 c2))
+  (api compare-contexts [c1 c2 corpus]
+       (search/compare-contexts (getc corpus) c1 c2))
   (api tree path
        (files path))
   (api create-corpus {:keys [name file]}

@@ -24,7 +24,7 @@
 
 (register-handler :refresh-table
                   (fn [state _]
-                    (api/call "get-documents" (filter-params (:document-filter state)) #(dispatch [:set-documents %]))
+                    (api/call "get-documents" (assoc (filter-params (:document-filter state)) :corpus (:current-corpus state)) #(dispatch [:set-documents %]))
                     state))
 
 (register-handler :reset-filters

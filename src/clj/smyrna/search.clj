@@ -146,9 +146,11 @@
 (defn frequency-list
   ([corpus context-name]
    (let [counts (count-context corpus context-name)]
-     (filter (comp alnum? first)
-             (sort-by second > (map vector (:lemmata corpus) counts)))))
-  ([corpus context-name limit offset]
+     (->> (map vector (:lemmata corpus) counts)
+          (sort-by second >)
+          (filter (comp alnum? first))
+          vec)))
+  ([corpus context-name limit offset] ;; unused atm
    (take limit (drop offset (frequency-list corpus context-name)))))
 
 (defn compare-contexts

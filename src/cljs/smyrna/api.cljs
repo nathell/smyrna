@@ -6,4 +6,4 @@
 (defn call [method params & [f]]
   (let [f (or f identity)]
     (go (f (:body (<! (http/post (str "/api/" method)
-                                 {:edn-params params})))))))
+                                 {:edn-params (or params {})})))))))

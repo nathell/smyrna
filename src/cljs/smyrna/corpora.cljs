@@ -6,7 +6,18 @@
             [smyrna.task :as task]
             [smyrna.utils :refer [register-accessors register-getter dispatch-value area-selector]]))
 
+(defn get-corpora []
+  (api/call "get-corpora" {} #(dispatch [:set-corpora-list %])))
+
+(defn get-corpus-info [corpus]
+  (api/call "get-corpus-info" {:corpus corpus} #(dispatch [:set-metadata %])))
+
+(defn get-files [path]
+  (api/call "tree" path #(dispatch [:set-files path %])))
+
 (register-accessors :filepicker-path :filepicker-file :new-corpus-name :corpora-list)
+
+(register-getter :current-corpus)
 
 (register-sub :files (fn [state [_ path]] (reaction (get-in @state [:files (or path "/")]))))
 (register-handler :set-files (fn [state [_ path files]] (assoc-in state [:files path] files)))
@@ -17,8 +28,16 @@
                     (task/get-task-info)
                     state))
 
-(defn get-files [path]
-  (api/call "tree" path #(dispatch [:set-files path %])))
+(register-handler :init-corpus
+                  (fn [state _]
+                    (get-corpus-info (:current-corpus state))
+                    (dispatch [:refresh-table])
+                    state))
+
+(register-handler :switch-corpus
+                  (fn [state [_ corpus]]
+                    (dispatch [:init-corpus])
+                    (assoc state :current-corpus corpus)))
 
 (defn drop-ext [f]
   (string/replace f #"\..*" ""))
@@ -67,7 +86,18 @@
        [:table
         [:thead [:tr [:th "Nazwa korpusu"] [:th "Liczba dokumentów"]]]
         [:tbody (for [{:keys [name num-documents]} @corpora]
-                  [:tr [:td name] [:td num-documents]])]]])))
+                  [:tr [:td [:a {:href "#" :on-click #(dispatch [:switch-corpus name])} name]] [:td num-documents]])]]])))
+
+(defn corpus-selector []
+  (let [current-corpus (subscribe [:current-corpus])
+        corpora (subscribe [:corpora-list])]
+    (fn render-corpus-selector []
+      [:select {:class "corpus-selector", :on-change (dispatch-value :switch-corpus)}
+       (if-not @current-corpus
+         [:option "[Wybierz korpus]"])
+       (doall
+        (for [{:keys [name]} @corpora]
+          [:option {:key name, :selected (= name @current-corpus)} name]))])))
 
 (defn corpora []
   [:div {:class "corpora"}

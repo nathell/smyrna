@@ -2,11 +2,12 @@
   (:require [re-frame.core :as re-frame :refer [register-handler path register-sub dispatch dispatch-sync subscribe]]
             [reagent.core :as reagent]
             [smyrna.task :as task]
-            [smyrna.utils :refer [register-accessors dispatch-value]]
+            [smyrna.utils :refer [register-accessors register-getter dispatch-value]]
             [smyrna.corpora :refer [corpora] :as corpora]
             [smyrna.document-table :refer [document-table]]
             [smyrna.wordcloud :refer [wordcloud]]
             [smyrna.freq :refer [frequency-lists]]
+            [smyrna.table :refer [table]]
             [smyrna.api :as api]))
 
 (def meta-location "/meta")
@@ -16,18 +17,14 @@
 (def initial-state
   {:tab 1,
    :document-filter {:page 0, :rows-per-page 10, :filters {}},
-   :frequency-list-offset 0,
-   :frequency-list-limit 25})
-
-(defn load-metadata
-  []
-  (api/call "get-corpus-info" {} #(dispatch [:set-metadata %])))
+   :frequency-list-table {:columns {:leksem {:title "Leksem", :width 300}
+                                    :frekwencja {:title "Frekwencja", :width 200}}
+                          :shown-columns [:leksem :frekwencja]}})
 
 (register-handler :initialize
   (fn [state _]
-    (load-metadata)
+    (corpora/get-corpora)
     (corpora/get-files "/")
-    (dispatch [:refresh-table])
     (merge state initial-state)))
 
 (register-accessors :tab :modal)
@@ -37,6 +34,7 @@
 (defn tabbar [& labels-and-components]
   (let [tab (subscribe [:tab])
         modal (subscribe [:modal])
+        current-corpus (subscribe [:current-corpus])
         pairs (partition 2 labels-and-components)
         labels (map first pairs)
         components (map second pairs)]
@@ -45,11 +43,18 @@
        [:ul {:class "nav"}
         (doall
          (for [[n label] (map-indexed vector labels)]
-           [:li {:key (str "navbar-" n),
-                 :class (str "navbar-" n " " (if (= n @tab) "item selected" "item"))}
-            [:a {:href "#" :on-click #(if (vector? (nth components n))
-                                        (dispatch [:set-tab n])
-                                        ((nth components n)))} label]]))]
+           (let [component (nth components n)
+                 disabled? (and (not @current-corpus) (>= n 2))]
+             [:li {:key (str "navbar-" n),
+                   :class (str "navbar-" n " " (if (= n @tab) "item selected" "item"))}
+              [:a {:href "#"
+                   :class (if disabled? "disabled" "")
+                   :on-click #(cond
+                                disabled? nil
+                                (vector? component) (dispatch [:set-tab n])
+                                :otherwise (component))} label]])))
+        [:li {:class "glue"}]
+        [:li {:class "corpus-selector-container"} [corpora/corpus-selector]]]
        [:div {:class "tab"}
         (nth components @tab)]])))
 

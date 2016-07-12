@@ -1,27 +1,26 @@
 (ns smyrna.freq
   (:require [re-frame.core :as re-frame :refer [register-handler path register-sub dispatch subscribe]]
+            [reagent.core :as reagent]
             [smyrna.api :as api]
+            [smyrna.table :refer [table]]
             [smyrna.utils :refer [register-accessors register-getter dispatch-value area-selector]]))
 
-(register-accessors :frequency-list-area :frequency-list :frequency-list-offset :frequency-list-limit)
+(register-accessors :frequency-list-area)
+(register-getter :frequency-list-table)
+
+(register-handler :set-frequency-list
+                  (fn [state [_ data]]
+                    (assoc-in state [:frequency-list-table :data] data)))
 
 (register-handler :update-frequency-list
                   (fn [state _]
-                    (api/call "frequency-list" {:context (:frequency-list-area state),
-                                                :offset (:frequency-list-offset state),
-                                                :limit (:frequency-list-limit state)}
+                    (api/call "frequency-list" {:context (:frequency-list-area state)
+                                                :corpus (:current-corpus state)}
                               #(dispatch [:set-frequency-list %]))
                     state))
 
-(defn table []
-  (let [frequency-list (subscribe [:frequency-list])]
-    (fn render-table []
-      [:div
-       (when (seq @frequency-list)
-         [:table {:class "frequency-list"}
-          [:tr [:th "Leksem"] [:th "Frekwencja"]]
-          (for [[word count] @frequency-list]
-            [:tr [:td word] [:td count]])])])))
+(defn freq-table []
+  (table :frequency-list-table :height 600))
 
 (defn downloader []
   (let [frequency-list-area (subscribe [:frequency-list-area])]
@@ -32,5 +31,5 @@
   [:div
    [area-selector :set-frequency-list-area]
    [:button {:on-click #(dispatch [:update-frequency-list])} "Pokaż"]
-   [table]
+   [freq-table]
    [downloader]])
