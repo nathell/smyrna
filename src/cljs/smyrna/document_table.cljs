@@ -17,7 +17,7 @@
 (defn toggle-nilable [s el n]
   (toggle (or s (set (range n))) el))
 
-(register-accessors :documents :new-area :shown-filter :browsed-document)
+(register-accessors :documents :new-area :browsed-document)
 (register-getter :document-filter)
 (register-getter :metadata)
 (register-getter :contexts)
@@ -129,7 +129,7 @@
    [:div
     [:button {:on-click #(dispatch [:checkboxes-set-all key])} "Wszystkie"]
     [:button {:on-click #(dispatch [:checkboxes-clear-all key])} "Żodyn"]
-    [:button {:on-click #(do (dispatch [:set-shown-filter nil])
+    [:button {:on-click #(do (dispatch [:set-modal nil])
                              (dispatch [:refresh-table]))} "OK"]]])
 
 (defn filter-text [key]
@@ -143,17 +143,14 @@
     (filter-text col)))
 
 (defn header []
-  (let [metadata (subscribe [:metadata])
-        shown-filter (subscribe [:shown-filter])]
+  (let [metadata (subscribe [:metadata])]
     (fn render-header []
       [:thead
        (vec (concat [:tr]
                     [[:th "Akcje"]]
                     (for [[col valset] @metadata]
                       [:th
-                       [:a {:href "#" :on-click #(dispatch [:set-shown-filter col])} col]
-                       (if (= @shown-filter col)
-                         [filter-widget col valset])])))])))
+                       [:a {:href "#" :on-click #(dispatch [:set-modal (partial filter-widget col valset)])} col]])))])))
 
 (defn body []
   (let [documents (subscribe [:documents])]
