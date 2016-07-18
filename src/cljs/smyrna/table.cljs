@@ -9,7 +9,7 @@
 
 (defn default-cell-renderer
   [row i]
-  (row i))
+  (nth row i))
 
 (register-handler :set-column-width
   (fn [state [_ table column width]]
@@ -35,5 +35,5 @@
                                    :cell
                                    (fn [args]
                                      (let [{:strs [columnKey rowIndex]} (js->clj args)]
-                                       (reagent/as-element [Cell (cell-renderer (data rowIndex) i)])))}]))
+                                       (reagent/as-element [Cell (cell-renderer (nth data rowIndex) i)])))}]))
                       shown-columns)]))))

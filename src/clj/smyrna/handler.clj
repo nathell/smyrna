@@ -109,7 +109,6 @@
        (:results (search/get-documents (getc (:corpus params)) params)))
   (api get-corpus-info {:keys [corpus]}
        {:metadata (meta/get-header (:meta (getc corpus))),
-        :corpora-list (corpus/list-corpora),
         :contexts (vec (sort-by first (map (fn [[k v]] [k (:description v)]) @search/contexts)))})
   (api get-task-info []
        (task/get-info))

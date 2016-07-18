@@ -19,7 +19,10 @@
    :document-filter {:page 0, :rows-per-page 10, :filters {}},
    :frequency-list-table {:columns {:leksem {:title "Leksem", :width 300}
                                     :frekwencja {:title "Frekwencja", :width 200}}
-                          :shown-columns [:leksem :frekwencja]}})
+                          :shown-columns [:leksem :frekwencja]}
+   :corpora-table {:columns {:name {:title "Nazwa korpusu", :width 300}
+                             :num-documents {:title "Liczba dokumentów", :width 300}}
+                   :shown-columns [:name :num-documents]}})
 
 (register-handler :initialize
   (fn [state _]
@@ -30,6 +33,9 @@
 (register-accessors :tab :modal)
 
 (register-handler :set-metadata (fn [state [_ corpus-info]] (merge state corpus-info)))
+
+(register-handler :set-corpora-list (fn [state [_ corpora]]
+                                      (assoc-in state [:corpora-table :data] corpora)))
 
 (defn tabbar [& labels-and-components]
   (let [tab (subscribe [:tab])

@@ -4,6 +4,7 @@
             [re-frame.core :as re-frame :refer [register-handler path register-sub dispatch subscribe]]
             [smyrna.api :as api]
             [smyrna.task :as task]
+            [smyrna.table :refer [table]]
             [smyrna.utils :refer [register-accessors register-getter dispatch-value area-selector]]))
 
 (defn get-corpora []
@@ -15,7 +16,7 @@
 (defn get-files [path]
   (api/call "tree" path #(dispatch [:set-files path %])))
 
-(register-accessors :filepicker-path :filepicker-file :new-corpus-name :corpora-list)
+(register-accessors :filepicker-path :filepicker-file :new-corpus-name)
 
 (register-getter :current-corpus)
 
@@ -38,6 +39,8 @@
                   (fn [state [_ corpus]]
                     (dispatch [:init-corpus])
                     (assoc state :current-corpus corpus)))
+
+(register-getter :corpora-table)
 
 (defn drop-ext [f]
   (string/replace f #"\..*" ""))
@@ -79,29 +82,28 @@
         [:button {:on-click #(dispatch [:create-corpus])} "Utwórz korpus"]]])))
 
 (defn corpora-list []
-  (let [corpora (subscribe [:corpora-list])]
-    (fn render-corpora-list []
-      [:div {:class "corpora-list"}
-       [:h1 "Lista korpusów"]
-       [:table
-        [:thead [:tr [:th "Nazwa korpusu"] [:th "Liczba dokumentów"]]]
-        [:tbody (for [{:keys [name num-documents]} @corpora]
-                  [:tr [:td [:a {:href "#" :on-click #(dispatch [:switch-corpus name])} name]] [:td num-documents]])]]])))
+  (table :corpora-table
+         :cell-renderer (fn [row i]
+                          (let [val (nth row i)]
+                            (if (zero? i)
+                              [:a {:href "#" :on-click #(dispatch [:switch-corpus val])} val]
+                              val)))))
 
 (defn corpus-selector []
   (let [current-corpus (subscribe [:current-corpus])
-        corpora (subscribe [:corpora-list])]
+        corpora (subscribe [:corpora-table])]
     (fn render-corpus-selector []
-      [:select {:class "corpus-selector", :on-change (dispatch-value :switch-corpus)}
+      [:select {:class "corpus-selector", :on-change (dispatch-value :switch-corpus), :value @current-corpus}
        (if-not @current-corpus
          [:option "[Wybierz korpus]"])
        (doall
-        (for [{:keys [name]} @corpora]
-          [:option {:key name, :selected (= name @current-corpus)} name]))])))
+        (for [[name _] (:data @corpora)]
+          [:option {:key name} name]))])))
 
 (defn corpora []
   [:div {:class "corpora"}
    [:p "Aby rozpocząć pracę ze Smyrną, trzeba stworzyć korpus. W tym celu należy wskazać plik z metadanymi korpusu lub wybrać katalog na dysku, zawierający dokumenty w formacie HTML."]
+   [:h1 "Lista korpusów"]
    [corpora-list]
    [:div {:class "button-container"}
     [:button {:on-click #(dispatch [:set-modal creator])} "Stwórz nowy korpus"]]])

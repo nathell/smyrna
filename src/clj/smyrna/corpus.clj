@@ -235,9 +235,9 @@
 (def corpora-path (format "%s/.smyrna" (System/getProperty "user.home")))
 
 (defn list-corpora []
-  (sort-by :name
+  (sort-by first
            (for [c (.listFiles (io/file corpora-path))
                  :when (.endsWith (str c) ".smyrna")
                  :let [name (.getName c)]]
-             {:name (subs name 0 (- (count name) 7)),
-              :num-documents (num-documents-file c)})))
+             [(subs name 0 (- (count name) 7))
+              (num-documents-file c)])))
