@@ -10,6 +10,24 @@
 (defn get-corpora []
   (api/call "get-corpora" {} #(dispatch [:set-corpora-list %])))
 
+(defn get-columns
+  [metadata]
+  (into {} (for [[name _] metadata]
+             [(keyword name) {:title (string/capitalize name), :width 200}])))
+
+(defn get-shown-columns
+  [metadata]
+  (mapv (comp keyword first) metadata))
+
+(register-handler :set-metadata
+                  (fn [state [_ {:keys [metadata contexts]}]]
+                    (let [meta-columns (get-columns metadata)]
+                      (-> state
+                          (assoc-in [:document-table :metadata] metadata)
+                          (assoc-in [:document-table :columns] (get-columns metadata))
+                          (assoc-in [:document-table :shown-columns] (get-shown-columns metadata))
+                          (assoc :contexts contexts)))))
+
 (defn get-corpus-info [corpus]
   (api/call "get-corpus-info" {:corpus corpus} #(dispatch [:set-metadata %])))
 
@@ -38,7 +56,7 @@
 (register-handler :switch-corpus
                   (fn [state [_ corpus]]
                     (dispatch [:init-corpus])
-                    (assoc state :current-corpus corpus)))
+                    (assoc state :current-corpus corpus :tab 2)))
 
 (register-getter :corpora-table)
 
@@ -83,9 +101,9 @@
 
 (defn corpora-list []
   (table :corpora-table
-         :cell-renderer (fn [row i]
-                          (let [val (nth row i)]
-                            (if (zero? i)
+         :cell-renderer (fn [{:keys [data]} row col]
+                          (let [val (nth (nth data row) col)]
+                            (if (zero? col)
                               [:a {:href "#" :on-click #(dispatch [:switch-corpus val])} val]
                               val)))))
 

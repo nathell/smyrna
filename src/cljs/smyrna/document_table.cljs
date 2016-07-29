@@ -2,7 +2,8 @@
   (:require [reagent.core :as reagent :refer [atom]]
             [re-frame.core :as re-frame :refer [register-handler path register-sub dispatch dispatch-sync subscribe]]
             [smyrna.api :as api]
-            [smyrna.utils :refer [register-accessors register-getter dispatch-value]]))
+            [smyrna.utils :refer [register-accessors register-getter dispatch-value]]
+            [smyrna.table :refer [table]]))
 
 (defn filter-params [{:keys [page rows-per-page filters phrase within]}]
   {:offset (* page rows-per-page),
@@ -17,10 +18,15 @@
 (defn toggle-nilable [s el n]
   (toggle (or s (set (range n))) el))
 
-(register-accessors :documents :new-area :browsed-document)
+(register-accessors :new-area :browsed-document)
 (register-getter :document-filter)
 (register-getter :metadata)
 (register-getter :contexts)
+(register-getter :document-table)
+
+(register-handler :set-documents
+                  (fn [state [_ documents]]
+                    (assoc-in state [:document-table :data] documents)))
 
 (register-handler :refresh-table
                   (fn [state _]
@@ -163,9 +169,22 @@
           (for [[i cell] (map-indexed vector row)]
             [:td {:key (str key "-" i)} cell])])])))
 
+(defn main-table-header [col title]
+  (let [document-table (subscribe [:document-table])]
+    (fn render-header []
+      (let [[col-id valset] (nth (:metadata @document-table) col)]
+        [:a {:href "#"
+             :on-click #(dispatch [:set-modal (partial filter-widget col-id valset)])} title]))))
+
+(defn main-table []
+  (table :document-table
+         :cell-renderer (fn [{:keys [data]} row col]
+                          (let [val (nth (nth data row) (inc col))]
+                            [:a {:href "#" :title val} val]))
+         :header-renderer (fn [col title]
+                            [main-table-header col title])))
+
 (defn document-table []
   [:div {:class "documents-container"}
    [top-overlay]
-   [:table {:class "documents"}
-    [header]
-    [body]]])
+   [main-table]])

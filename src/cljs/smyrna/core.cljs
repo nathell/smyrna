@@ -22,7 +22,8 @@
                           :shown-columns [:leksem :frekwencja]}
    :corpora-table {:columns {:name {:title "Nazwa korpusu", :width 300}
                              :num-documents {:title "Liczba dokumentów", :width 300}}
-                   :shown-columns [:name :num-documents]}})
+                   :shown-columns [:name :num-documents]}
+   :document-table {:data []}})
 
 (register-handler :initialize
   (fn [state _]
@@ -31,8 +32,6 @@
     (merge state initial-state)))
 
 (register-accessors :tab :modal)
-
-(register-handler :set-metadata (fn [state [_ corpus-info]] (merge state corpus-info)))
 
 (register-handler :set-corpora-list (fn [state [_ corpora]]
                                       (assoc-in state [:corpora-table :data] corpora)))
