@@ -12,8 +12,9 @@
 
 (defn get-columns
   [metadata]
-  (into {} (for [[name _] metadata]
-             [(keyword name) {:title (string/capitalize name), :width 200}])))
+  (let [w (min 200 (/ (- js/window.innerWidth 76) (count metadata)))]
+    (into {} (for [[name _] metadata]
+               [(keyword name) {:title (string/capitalize name), :width w}]))))
 
 (defn get-shown-columns
   [metadata]
@@ -26,6 +27,7 @@
                           (assoc-in [:document-table :metadata] metadata)
                           (assoc-in [:document-table :columns] (get-columns metadata))
                           (assoc-in [:document-table :shown-columns] (get-shown-columns metadata))
+                          (assoc-in [:document-table :column-order] (get-shown-columns metadata))
                           (assoc :contexts contexts)))))
 
 (defn get-corpus-info [corpus]
@@ -102,9 +104,10 @@
 (defn corpora-list []
   (table :corpora-table
          :cell-renderer (fn [{:keys [data]} row col]
-                          (let [val (nth (nth data row) col)]
-                            (if (zero? col)
-                              [:a {:href "#" :on-click #(dispatch [:switch-corpus val])} val]
+                          (let [arow (nth data row)
+                                val (nth arow col)]
+                            (if (= col 1)
+                              [:a {:href "#" :on-click #(dispatch [:switch-corpus (first arow)])} val]
                               val)))))
 
 (defn corpus-selector []
@@ -115,8 +118,8 @@
        (if-not @current-corpus
          [:option "[Wybierz korpus]"])
        (doall
-        (for [[name _] (:data @corpora)]
-          [:option {:key name} name]))])))
+        (for [[id name _] (:data @corpora)]
+          [:option {:key name, :value id} name]))])))
 
 (defn corpora []
   [:div {:class "corpora"}

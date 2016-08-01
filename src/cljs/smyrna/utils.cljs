@@ -3,8 +3,12 @@
   (:require [re-frame.core :as re-frame :refer [register-handler path register-sub dispatch dispatch-sync subscribe]]
             [smyrna.api :as api]))
 
+(defn setter-event
+  [k]
+  (keyword (str "set-" (name k))))
+
 (defn register-setter
-  ([k] (register-setter k (keyword (str "set-" (name k)))))
+  ([k] (register-setter k (setter-event k)))
   ([k handler-name]
    (register-handler handler-name
                      (fn [state [_ new-value]]

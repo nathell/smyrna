@@ -6,7 +6,7 @@ html, body {
     height: 100%;
 }
 
-#app, .nav-container {
+#app, .nav-container, .fullsize {
     height: 100%;
 }
 
@@ -16,8 +16,38 @@ body {
 }
 
 .nav-container {
-    display: flex;
-    flex-flow: column;
+    display: table;
+    width: 100%;
+}
+
+table.fixed-top {
+    border-collapse: collapse;
+    border: none;
+    width: 100%;
+    height: 100%;
+}
+
+table.fixed-top > tbody > tr:first-child {
+    height: 0;
+}
+
+table.tabbar > tbody > tr:first-child {
+    height: 40px;
+}
+
+table.fixed-top > tbody > tr > td {
+    border: none;
+    padding: 0;
+}
+
+iframe {
+    width: 100%;
+    height: 100%;
+}
+
+.nav-holder {
+    display: table-row;
+    height: 40px;
 }
 
 .nav {
@@ -26,7 +56,6 @@ body {
     background: #cbdbe0;
     font: 14pt Arial;
     color: #333;
-    height: 40px;
     border-bottom: 1px solid #bed2d9;
     display: flex;
     flex-flow: row;
@@ -35,7 +64,7 @@ body {
 .corpus-selector-container {
 }
 
-.navbar-0, .about h1 {
+.navbar-tab-0, .about h1 {
     font-weight: bold;
     font-style: italic;
     font-family: Times New Roman, Times;
@@ -46,7 +75,7 @@ body {
 }
 
 .tab {
-    flex: 1;
+    height: 100%;
     margin: 0;
     overflow: auto;
     padding: 1em;
@@ -99,30 +128,31 @@ a:hover {
 
 .documents-container {
     width: 90%;
+    height: 100%;
     margin: 0 auto;
 }
 
-.documents {
-    border-collapse: collapse;
-    margin: 0 auto;
+.search {
+    text-align: center;
+}
+
+.search .phrase {
+    font-size: 20pt;
     width: 100%;
 }
 
-.documents thead tr {
-    background: #dce8eb;
+.search .group {
+    width: 50%;
+    min-width: 600px;
+    margin: 0 auto 10px auto;
 }
 
-.documents tbody tr:nth-child(even) {
-    background: #ecf1f2;
+.search .search-button {
+    margin: 0 10px;
 }
 
-.documents tbody tr:nth-child(odd) {
-    background: #f7f9fe;
-}
-
-.documents td, .documents th {
-    border: none;
-    padding: 5px;
+.search .advanced {
+    font-size: 11pt;
 }
 
 .pagination {
@@ -132,6 +162,11 @@ a:hover {
 
 .corpora {
     overflow: auto;
+}
+
+.public_fixedDataTableCell_cellContent {
+    white-space: nowrap !important;
+    text-overflow: ellipsis !important;
 }
 
 .modal-dialog {
@@ -188,6 +223,7 @@ a:hover {
 
 .modal-disabled {
     pointer-events: none;
+    height: 100%;
 }
 
 .button-container {

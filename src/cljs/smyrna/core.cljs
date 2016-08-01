@@ -8,6 +8,7 @@
             [smyrna.wordcloud :refer [wordcloud]]
             [smyrna.freq :refer [frequency-lists]]
             [smyrna.table :refer [table]]
+            [smyrna.tabbar :refer [tabbar]]
             [smyrna.api :as api]))
 
 (def meta-location "/meta")
@@ -16,12 +17,16 @@
 
 (def initial-state
   {:tab 1,
+   :document-tab 0,
    :document-filter {:page 0, :rows-per-page 10, :filters {}},
    :frequency-list-table {:columns {:leksem {:title "Leksem", :width 300}
                                     :frekwencja {:title "Frekwencja", :width 200}}
+                          :column-order [:leksem :frekwencja]
                           :shown-columns [:leksem :frekwencja]}
-   :corpora-table {:columns {:name {:title "Nazwa korpusu", :width 300}
+   :corpora-table {:columns {:id {:title "ID", :width 0}
+                             :name {:title "Nazwa korpusu", :width 300}
                              :num-documents {:title "Liczba dokumentów", :width 300}}
+                   :column-order [:id :name :num-documents]
                    :shown-columns [:name :num-documents]}
    :document-table {:data []}})
 
@@ -35,46 +40,6 @@
 
 (register-handler :set-corpora-list (fn [state [_ corpora]]
                                       (assoc-in state [:corpora-table :data] corpora)))
-
-(defn tabbar [& labels-and-components]
-  (let [tab (subscribe [:tab])
-        modal (subscribe [:modal])
-        current-corpus (subscribe [:current-corpus])
-        pairs (partition 2 labels-and-components)
-        labels (map first pairs)
-        components (map second pairs)]
-    (fn tabbar-render []
-      [:div {:class (if @modal "nav-container modal-disabled" "nav-container")}
-       [:ul {:class "nav"}
-        (doall
-         (for [[n label] (map-indexed vector labels)]
-           (let [component (nth components n)
-                 disabled? (and (not @current-corpus) (>= n 2))]
-             [:li {:key (str "navbar-" n),
-                   :class (str "navbar-" n " " (if (= n @tab) "item selected" "item"))}
-              [:a {:href "#"
-                   :class (if disabled? "disabled" "")
-                   :on-click #(cond
-                                disabled? nil
-                                (vector? component) (dispatch [:set-tab n])
-                                :otherwise (component))} label]])))
-        [:li {:class "glue"}]
-        [:li {:class "corpus-selector-container"} [corpora/corpus-selector]]]
-       [:div {:class "tab"}
-        (nth components @tab)]])))
-
-(defn document-browser []
-  (let [browsed-document (subscribe [:browsed-document])
-        document-filter (subscribe [:document-filter])]
-    (fn render-document-browser []
-      [:div {:class "nav-container"}
-       [:h1 "Dokument"]
-       (if-let [link @browsed-document]
-         [:iframe {:width "100%" :height "50%" :src
-                   (if-let [phrase (:phrase @document-filter)]
-                     (str "/highlight/" phrase "/" link)
-                     (str "/corpus/" link))}]
-         [:h2 "Brak dokumentu do wyświetlenia."])])))
 
 (defn about []
   [:div {:class "about"}
@@ -97,16 +62,27 @@
          [:div
           [:a {:class "close" :href "#" :on-click #(dispatch [:set-modal nil])} "✖"] [@modal]])])))
 
+(defn main-tab-disabled?
+  []
+  (let [current-corpus (subscribe [:current-corpus])]
+    (fn [n]
+      (and (not @current-corpus) (>= n 2)))))
+
 (defn root []
-  [:div
-   [modal-box]
-   [tabbar
-    "Smyrna" #(dispatch [:set-modal about])
-    "Korpusy" [corpora]
-    "Wyszukiwanie" [document-table]
-    "Dokumenty" [document-browser]
-    "Chmury słów" [wordcloud]
-    "Listy frekwencyjne" [frequency-lists]]])
+  (let [modal (subscribe [:modal])]
+    (fn render-root []
+      [:div {:class "fullsize"}
+       [modal-box]
+       [:div {:class (if @modal "modal-disabled" "fullsize")}
+        [tabbar :tab
+         ["Smyrna" #(dispatch [:set-modal about])
+          "Korpusy" [corpora]
+          "Wyszukiwanie" [document-table]
+          "Chmury słów" [wordcloud]
+          "Listy frekwencyjne" [frequency-lists]
+          :glue nil
+          :inline [corpora/corpus-selector]]
+         :disabled-item? (main-tab-disabled?)]]])))
 
 (defn mount-root []
   (dispatch-sync [:initialize])

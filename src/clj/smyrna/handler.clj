@@ -22,11 +22,13 @@
 (defn getc
   [x]
   (when x ;; FIXME: corpus/open creates an empty corpus file
-    (or (@corpora x)
-        (let [path (format "%s/%s.smyrna" corpus/corpora-path x)
-              corpus (corpus/open path)]
-          (swap! corpora assoc x corpus)
-          corpus))))
+    (let [x (if (string? x) (Long/parseLong x) x)
+          name (@corpus/corpus-keys x)]
+      (or (@corpora name)
+          (let [path (format "%s/%s.smyrna" corpus/corpora-path name)
+                corpus (corpus/open path)]
+            (swap! corpora assoc name corpus)
+            corpus)))))
 
 (def loading-page
   (html5
@@ -89,13 +91,15 @@
   ;;                  "Content-Disposition" (format "attachment; filename=\"lista-frekwencyjna-%s.csv\"" area)},
   ;;        :body (with-out-str (csv/write-csv *out* (search/frequency-list corpus area)))})
   (GET "/highlight/:corpus/:phrase/*" [corpus phrase *]
-       (let [i ((:key-index corpus) *)]
+       (let [corpus (getc corpus)
+             i ((:key-index corpus) *)]
          (when i
            (let [doc (corpus/read-document corpus i :lookup false)]
              (str styles
                   (html (corpus/deserialize (search/highlight-doc corpus doc phrase))))))))
   (GET "/corpus/:corpus/*" [corpus *]
-       (let [k *
+       (let [corpus (getc corpus)
+             k *
              k (if (.endsWith k ".html")
                  (subs k 0 (- (count k) (count ".html")))
                  k)

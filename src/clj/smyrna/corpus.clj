@@ -234,10 +234,21 @@
 
 (def corpora-path (format "%s/.smyrna" (System/getProperty "user.home")))
 
+(def corpus-keys (atom []))
+
+(defn add-corpus [c]
+  (.indexOf
+   (swap! corpus-keys
+          (fn [val]
+            (if (neg? (.indexOf val c))
+              (conj val c)
+              val)))
+   c))
+
 (defn list-corpora []
-  (sort-by first
+  (sort-by second
            (for [c (.listFiles (io/file corpora-path))
                  :when (.endsWith (str c) ".smyrna")
-                 :let [name (.getName c)]]
-             [(subs name 0 (- (count name) 7))
-              (num-documents-file c)])))
+                 :let [name-ext (.getName c)
+                       name (subs name-ext 0 (- (count name-ext) 7))]]
+             [(add-corpus name) name (num-documents-file c)])))

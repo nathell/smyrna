@@ -3,7 +3,8 @@
             [re-frame.core :as re-frame :refer [register-handler path register-sub dispatch dispatch-sync subscribe]]
             [smyrna.api :as api]
             [smyrna.utils :refer [register-accessors register-getter dispatch-value]]
-            [smyrna.table :refer [table]]))
+            [smyrna.table :refer [table]]
+            [smyrna.tabbar :refer [tabbar]]))
 
 (defn filter-params [{:keys [page rows-per-page filters phrase within]}]
   {:offset (* page rows-per-page),
@@ -18,7 +19,7 @@
 (defn toggle-nilable [s el n]
   (toggle (or s (set (range n))) el))
 
-(register-accessors :new-area :browsed-document)
+(register-accessors :new-area :browsed-document :document-tab :advanced)
 (register-getter :document-filter)
 (register-getter :metadata)
 (register-getter :contexts)
@@ -30,7 +31,8 @@
 
 (register-handler :refresh-table
                   (fn [state _]
-                    (api/call "get-documents" (assoc (filter-params (:document-filter state)) :corpus (:current-corpus state)) #(dispatch [:set-documents %]))
+                    (api/call "get-documents"
+                              (assoc (filter-params (:document-filter state)) :corpus (:current-corpus state)) #(dispatch [:set-documents %]))
                     state))
 
 (register-handler :reset-filters
@@ -69,7 +71,7 @@
 
 (register-handler :browse
                   (fn [state [_ document]]
-                    (assoc state :browsed-document document :tab 1)))
+                    (assoc state :browsed-document document :document-tab 1)))
 
 (register-handler :create-area
                   (fn [state _]
@@ -87,17 +89,25 @@
    [:button {:on-click #(dispatch [:create-area])} "Utwórz obszar"]])
 
 (defn search []
-  (let [contexts (subscribe [:contexts])]
+  (let [contexts (subscribe [:contexts])
+        advanced (subscribe [:advanced])]
     (fn render-search []
-      [:div
-       [:input {:type "text", :placeholder "Wpisz szukaną frazę", :on-change (dispatch-value :set-phrase)}]
-       "Obszar: "
-       (into [:select {:on-change (dispatch-value :set-search-context)}
-              [:option "Cały korpus"]]
-             (for [[opt _] @contexts]
-               [:option {:value opt, #_:selected #_(= (:within @search-params) opt)} opt]))
-       [:button {:on-click #(dispatch [:refresh-table])} "Szukaj"]
-       [:button {:on-click #(dispatch [:reset-filters])} "Resetuj filtry"]])))
+      [:div {:class "search"}
+       [:div {:class "group"}
+        [:input {:class "phrase", :type "text", :autoFocus true, :placeholder "Wpisz szukaną frazę", :on-change (dispatch-value :set-phrase)}]]
+       [:div {:class "group"}
+        [:button {:class "search-button" :on-click #(dispatch [:refresh-table])} "Szukaj"]
+        [:a {:class "advanced" :href "#" :on-click #(dispatch [:set-advanced (not @advanced)])} (if @advanced "Ukryj zaawansowane opcje" "Pokaż zaawansowane opcje »")]]
+       (if @advanced
+         [:div {:class "group"}
+          "Obszar: "
+          (into [:select {:on-change (dispatch-value :set-search-context)}
+                 [:option "Cały korpus"]]
+                (for [[opt _] @contexts]
+                  [:option {:value opt, #_:selected #_(= (:within @search-params) opt)} opt]))])
+       (if @advanced
+         [:div {:class "group"}
+          [:button {:on-click #(dispatch [:reset-filters])} "Resetuj filtry"]])])))
 
 (defn pagination []
   (let [document-filter (subscribe [:document-filter])]
@@ -109,10 +119,11 @@
        [:a {:class "next", :href "#", :on-click #(dispatch [:move-page 1])} "Następne"]])))
 
 (defn top-overlay []
+  [search]
+  #_
   [:div
    [area-creator]
-   [search]
-   [pagination]])
+   [search]])
 
 (defn filter-checkboxes-content [labels key]
   (let [document-filter (subscribe [:document-filter])
@@ -148,27 +159,6 @@
     (filter-checkboxes valset col)
     (filter-text col)))
 
-(defn header []
-  (let [metadata (subscribe [:metadata])]
-    (fn render-header []
-      [:thead
-       (vec (concat [:tr]
-                    [[:th "Akcje"]]
-                    (for [[col valset] @metadata]
-                      [:th
-                       [:a {:href "#" :on-click #(dispatch [:set-modal (partial filter-widget col valset)])} col]])))])))
-
-(defn body []
-  (let [documents (subscribe [:documents])]
-    (fn body-render []
-      [:tbody
-       (for [[key & row] @documents]
-         [:tr {:key key}
-          [:td {:key (str key "-actions")}
-           [:a {:href "#" :on-click #(dispatch [:browse key])} "Zobacz"]]
-          (for [[i cell] (map-indexed vector row)]
-            [:td {:key (str key "-" i)} cell])])])))
-
 (defn main-table-header [col title]
   (let [document-table (subscribe [:document-table])]
     (fn render-header []
@@ -176,15 +166,42 @@
         [:a {:href "#"
              :on-click #(dispatch [:set-modal (partial filter-widget col-id valset)])} title]))))
 
-(defn main-table []
+(defn main-table-proper []
   (table :document-table
          :cell-renderer (fn [{:keys [data]} row col]
                           (let [val (nth (nth data row) (inc col))]
-                            [:a {:href "#" :title val} val]))
+                            [:a {:href "#"
+                                 :on-click #(dispatch [:browse (first (nth data row))])
+                                 :title val} val]))
          :header-renderer (fn [col title]
                             [main-table-header col title])))
 
+(defn main-table []
+  [:div {:class "fullsize"}
+   [pagination]
+   [main-table-proper]])
+
+(defn document-browser []
+  (let [browsed-document (subscribe [:browsed-document])
+        document-filter (subscribe [:document-filter])
+        corpus (subscribe [:current-corpus])]
+    (fn render-document-browser []
+      [:table {:class "fixed-top document"}
+       [:tbody
+        [:tr [:td [:h1 "Dokument"]]]
+        [:tr [:td
+              (if-let [link @browsed-document]
+                [:iframe {:src
+                          (if-let [phrase (:phrase @document-filter)]
+                            (str "/highlight/" @corpus "/" phrase "/" link)
+                            (str "/corpus/" @corpus "/" link))}]
+                [:h2 "Brak dokumentu do wyświetlenia."])]]]])))
+
 (defn document-table []
-  [:div {:class "documents-container"}
-   [top-overlay]
-   [main-table]])
+  [:table {:class "fixed-top documents"}
+   [:tbody
+    [:tr [:td [top-overlay]]]
+    [:tr [:td [tabbar :document-tab
+               ["Lista dokumentów" [main-table]
+                "Pojedynczy dokument" [document-browser]
+                "KWIC" [:h1 "KWIC"]]]]]]])

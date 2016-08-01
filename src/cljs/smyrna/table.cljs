@@ -15,12 +15,19 @@
   (fn [state [_ table column width]]
     (assoc-in state [table :columns column :width] width)))
 
+(defn index-of [s v]
+  (loop [idx 0 items s]
+    (cond
+      (empty? items) nil
+      (= v (first items)) idx
+      :else (recur (inc idx) (rest items)))))
+
 (defn table
   [data-query & {:keys [header-height height cell-renderer header-renderer],
                  :or {header-height 40, cell-renderer default-cell-renderer}}]
   (let [data (subscribe [data-query])]
     (fn render-home-page []
-      (let [{:keys [columns shown-columns data] :as orig} @data
+      (let [{:keys [columns column-order shown-columns data] :as orig} @data
             total-width (apply + (map :width (vals columns)))
             total-height (+ 2 (* (inc (count data)) header-height))]
         [Table {:width total-width, :height (or height total-height),
@@ -28,15 +35,16 @@
                 :isColumnResizing false,
                 :onColumnResizeEndCallback #(dispatch [:set-column-width data-query (keyword %2) %1]),
                 :headerHeight 40}
-         (map-indexed (fn [i c]
-                        (let [{:keys [title width]} (columns c)]
-                          [Column {:header (if header-renderer
-                                             (reagent/as-element [Cell (header-renderer i title)])
-                                             title),
-                                   :columnKey (name c), :key (str (name data-query) "-" (name c)),
-                                   :width width, :isResizable true,
-                                   :cell
-                                   (fn [args]
-                                     (let [{:strs [columnKey rowIndex]} (js->clj args)]
-                                       (reagent/as-element [Cell (cell-renderer orig rowIndex i)])))}]))
-                      shown-columns)]))))
+         (map (fn [c]
+                (let [{:keys [title width]} (columns c)
+                      i (index-of column-order c)]
+                  [Column {:header (if header-renderer
+                                     (reagent/as-element [Cell (header-renderer i title)])
+                                     title),
+                           :columnKey (name c), :key (str (name data-query) "-" (name c)),
+                           :width width, :isResizable true,
+                           :cell
+                           (fn [args]
+                             (let [{:strs [columnKey rowIndex]} (js->clj args)]
+                               (reagent/as-element [Cell (cell-renderer orig rowIndex i)])))}]))
+              shown-columns)]))))
