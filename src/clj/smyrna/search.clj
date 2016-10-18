@@ -10,7 +10,7 @@
   [corpus lemma]
   (when-not (= lemma -1)
     (let [bs (bitstream/bit-source (:index corpus))]
-      (.scroll bs ((:index-offsets corpus) lemma))
+      (.scroll bs (@(:index-offsets corpus) lemma))
       (index/read-index-entry bs (corpus/num-documents corpus)))))
 
 (defn lemma

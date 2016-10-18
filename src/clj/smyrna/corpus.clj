@@ -50,7 +50,7 @@
 (defn add-index-offsets
   [corpus]
   (assoc corpus
-         :index-offsets (index/read-index-offsets (bitstream/bit-source (:index corpus)) (num-documents corpus) (count (:lemmata corpus)))))
+         :index-offsets (future (index/read-index-offsets (bitstream/bit-source (:index corpus)) (num-documents corpus) (count (:lemmata corpus))))))
 
 (defn add-key-index
   [corpus]
