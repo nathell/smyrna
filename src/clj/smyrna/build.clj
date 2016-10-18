@@ -105,9 +105,12 @@
       (dump-ints (str outdir "/numl") numl)
       (dump-ints (str outdir "/1stcode") first-code)
       (task/set-info "Trwa zapisywanie metadanych...")
-      (with-open [f (io/writer (java.util.zip.GZIPOutputStream. (java.io.FileOutputStream. (str outdir "/meta.edn.gz"))))]
+      (with-open [f (io/writer (java.util.zip.GZIPOutputStream. (java.io.FileOutputStream. (str outdir "/meta.edn.gz"))))
+                  f2 (io/writer (java.util.zip.GZIPOutputStream. (java.io.FileOutputStream. (str outdir "/paths.edn.gz"))))]
         (binding [*out* f]
-          (prn (meta/as-dictionaries (meta/drop-columns #{"file"} (csv/read-csv (io/reader metafile)))))))
+          (prn (meta/as-dictionaries (meta/drop-columns #{"file"} (csv/read-csv (io/reader metafile))))))
+        (binding [*out* f2]
+          (prn (mapv :file (read-csv-df metafile)))))
       (task/set-info "Trwa budowanie obrazu korpusu...")
       (with-open [corpus-image (bitstream/file-bit-sink (str outdir "/image"))
                   offset-file (java.io.DataOutputStream. (io/output-stream (str outdir "/offset")))]
