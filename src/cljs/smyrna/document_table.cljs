@@ -141,7 +141,7 @@
                            labels))))))
 
 (defn filter-checkboxes [labels key]
-  [:div
+  [:div {:class "filter filter-text"}
    [filter-checkboxes-content labels key]
    [:div
     [:button {:on-click #(dispatch [:checkboxes-set-all key])} "Wszystkie"]
@@ -150,9 +150,11 @@
                              (dispatch [:refresh-table]))} "OK"]]])
 
 (defn filter-text [key]
-  [:input {:type "text"
-           ; :value (get-in @search-params [:filters key])
-           :on-change #(dispatch [:set-filter key (-> % .-target .-value)])}])
+  [:div {:class "filter filter-text"}
+   [:input {:type "text"
+            :on-change #(dispatch [:set-filter key (-> % .-target .-value)])}]
+   [:button {:on-click #(do (dispatch [:set-modal nil])
+                             (dispatch [:refresh-table]))} "OK"]])
 
 (defn filter-widget [col valset]
   (if valset

@@ -235,6 +235,11 @@ button, input, select {
     padding: 5px 10px;
 }
 
+.filter-text input[type=text], .filter-text button {
+    display: block;
+    margin: 0 auto;
+}
+
 .directory-tree-container {
     border: 1px inset #999;
     background: white;
