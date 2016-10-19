@@ -130,9 +130,9 @@
         cnt (count labels)]
     (fn render-filter-checkboxes-content []
       (let [flt (get-in @document-filter [:filters key])]
-        (into [:div]
+        (into [:div {:class "checkboxes"}]
               (map-indexed (fn [n label]
-                             [:span
+                             [:div
                               [:input {:key (str "filter-cb-" n)
                                        :type "checkbox"
                                        :checked (if flt (boolean (flt n)) true)
@@ -140,21 +140,29 @@
                               [:label {:key (str "filter-lbl-" n)} label]])
                            labels))))))
 
+(defn filter-header [key]
+  [:h1 (str "Filtruj: " (name key))])
+
 (defn filter-checkboxes [labels key]
-  [:div {:class "filter filter-text"}
+  [:div {:class "filter filter-cb"}
+   [filter-header key]
    [filter-checkboxes-content labels key]
-   [:div
+   [:div {:class "buttons"}
     [:button {:on-click #(dispatch [:checkboxes-set-all key])} "Wszystkie"]
     [:button {:on-click #(dispatch [:checkboxes-clear-all key])} "Żodyn"]
     [:button {:on-click #(do (dispatch [:set-modal nil])
                              (dispatch [:refresh-table]))} "OK"]]])
 
 (defn filter-text [key]
-  [:div {:class "filter filter-text"}
-   [:input {:type "text"
-            :on-change #(dispatch [:set-filter key (-> % .-target .-value)])}]
-   [:button {:on-click #(do (dispatch [:set-modal nil])
-                             (dispatch [:refresh-table]))} "OK"]])
+  (let [filter (subscribe [:document-filter])]
+    (fn []
+      [:div {:class "filter filter-text"}
+       [filter-header key]
+       [:input {:type "text"
+                :value (get-in @filter [:filters key])
+                :on-change (dispatch-value :set-filter key)}]
+       [:button {:on-click #(do (dispatch [:set-modal nil])
+                                (dispatch [:refresh-table]))} "OK"]])))
 
 (defn filter-widget [col valset]
   (if valset

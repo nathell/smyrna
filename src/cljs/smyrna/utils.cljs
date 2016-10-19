@@ -25,8 +25,8 @@
     (register-getter k)))
 
 (defn dispatch-value
-  [ev]
-  #(dispatch-sync [ev (-> % .-target .-value)]))
+  [ev & args]
+  #(dispatch-sync (vec (concat [ev] args [(-> % .-target .-value)]))))
 
 ;; common components:
 

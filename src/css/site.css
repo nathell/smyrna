@@ -274,3 +274,13 @@ ul.tree li.file {
     display: block;
     margin: 2em auto;
 }
+
+.filter-cb .buttons {
+    text-align: center;
+}
+
+.filter-cb .checkboxes {
+    -webkit-column-width: 125px;
+    -moz-column-width: 125px;
+    column-width: 125px;
+}
