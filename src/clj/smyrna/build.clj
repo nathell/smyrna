@@ -33,12 +33,15 @@
   [metafile]
   (-> metafile io/file .getCanonicalFile .getParent (str "/")))
 
-(defn total-frequencies [metafile]
-  (task/set-info "Trwa zliczanie częstości słów...")
+(defn total-frequencies [metafile metadata]
   (let [prefix (corpus-dir metafile)
-        files (map #(str prefix (:file %)) (read-csv-df metafile))]
+        num-documents (count metadata)
+        files (map #(str prefix (:file %)) metadata)]
     {:num-documents (count files)
-     :freqs (apply merge-with + (map (comp frequencies vec html/serialize-tree tagsoup/parse) files))}))
+     :freqs (apply merge-with + (map-indexed (fn [i f]
+                                               (task/set-info (format "Trwa zliczanie częstości słów (wykonano %s%%)..." (int (* 100 (/ i num-documents)))))
+                                               (-> f tagsoup/parse html/serialize-tree vec frequencies))
+                                             files))}))
 
 (defn save-dicts [outdir vocab]
   (task/set-info "Trwa generowanie słowników...")
@@ -91,9 +94,11 @@
   (huffman/precompute-encoding vocab freq-vals))
 
 (defn build-corpus [metafile outdir]
+  (task/set-info "Trwa wczytywanie metadanych...")
   (io/make-parents (str outdir "/a"))
   (let [prefix (corpus-dir metafile)
-        {:keys [num-documents freqs]} (total-frequencies metafile)
+        metadata (read-csv-df metafile)
+        {:keys [num-documents freqs]} (total-frequencies metafile metadata)
         vocab (save-dicts outdir (keys freqs))
         num-words (count (take-while #(= (first %) :word) vocab))
         freq-vals (map freqs vocab)
@@ -110,7 +115,7 @@
         (binding [*out* f]
           (prn (meta/as-dictionaries (meta/drop-columns #{"file"} (csv/read-csv (io/reader metafile))))))
         (binding [*out* f2]
-          (prn (mapv :file (read-csv-df metafile)))))
+          (prn (mapv :file metadata))))
       (task/set-info "Trwa budowanie obrazu korpusu...")
       (with-open [corpus-image (bitstream/file-bit-sink (str outdir "/image"))
                   offset-file (java.io.DataOutputStream. (io/output-stream (str outdir "/offset")))]
@@ -123,7 +128,7 @@
                                     lemmata (distinct (map lemmatizer words))]
                                 (into inv (map #(+ i (bit-shift-left % 32)) lemmata)))))
                           (vector-of :long)
-                          (map-indexed vector (read-csv-df metafile)))
+                          (map-indexed vector metadata))
               _ (task/set-info "Trwa tworzenie indeksu odwrotnego...")
               ^longs arr (doto (into-array Long/TYPE inv) Arrays/sort)]
           (write-index (str outdir "/index") arr num-documents))))))

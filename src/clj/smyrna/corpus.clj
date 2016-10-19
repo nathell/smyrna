@@ -38,7 +38,7 @@
     (doto (.asLongBuffer buf)
       (.limit (/ length 8)))))
 
-(defn read-meta
+(defn read-gzipped-edn
   [arr]
   (-> arr io/input-stream GZIPInputStream. io/reader java.io.PushbackReader. edn/read))
 
@@ -102,7 +102,8 @@
         :tokens (into (vec (apply concat dicts)) [:nospace :end])
         :counts (zipmap dict-keys (map count dicts))
         :raw-meta-fn raw-meta-fn
-        :meta (read-meta (raw-meta-fn))
+        :meta (read-gzipped-edn (raw-meta-fn))
+        :paths (read-gzipped-edn (buffer-part buf (elems "paths.edn.gz")))
         :image (long-subbuffer buf (elems "image"))
         :index (long-subbuffer buf (elems "index"))
         :offset (int-subbuffer buf (elems "offset"))
@@ -112,9 +113,7 @@
         :lemmata (read-dict elems buf :lemmata)
         :lemmatizer (int-subbuffer buf (elems "lemmatizer"))}
        add-lemmata
-       add-index-offsets
-       add-key-index
-       ))))
+       add-index-offsets))))
 
 (defn take-while-global
   [pred coll]

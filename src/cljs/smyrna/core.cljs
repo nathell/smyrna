@@ -34,6 +34,7 @@
   (fn [state _]
     (corpora/get-corpora)
     (corpora/get-files "/")
+    (task/get-task-info)
     (merge state initial-state)))
 
 (register-accessors :tab :modal)

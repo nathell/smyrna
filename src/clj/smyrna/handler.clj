@@ -14,9 +14,6 @@
             [taoensso.timbre :refer [infof]]
             [environ.core :refer [env]]))
 
-; (def corpus (corpus/open "p4corpus.zip"))
-; (def corpus (corpus/open "corpus8.zip"))
-
 (def corpora (atom {}))
 
 (defn getc
@@ -92,19 +89,15 @@
   ;;        :body (with-out-str (csv/write-csv *out* (search/frequency-list corpus area)))})
   (GET "/highlight/:corpus/:phrase/*" [corpus phrase *]
        (let [corpus (getc corpus)
-             i ((:key-index corpus) *)]
-         (when i
+             i (.indexOf (:paths corpus) *)]
+         (when (>= i 0)
            (let [doc (corpus/read-document corpus i :lookup false)]
              (str styles
                   (html (corpus/deserialize (search/highlight-doc corpus doc phrase))))))))
   (GET "/corpus/:corpus/*" [corpus *]
        (let [corpus (getc corpus)
-             k *
-             k (if (.endsWith k ".html")
-                 (subs k 0 (- (count k) (count ".html")))
-                 k)
-             i ((:key-index corpus) k)]
-         (when i
+             i (.indexOf (:paths corpus) *)]
+         (when (>= i 0)
            (str styles
                 (html (corpus/deserialize (corpus/read-document corpus i)))))))
   (api get-corpora []

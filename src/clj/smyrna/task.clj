@@ -3,7 +3,9 @@
 (def info (atom nil))
 
 (defn set-info [x]
-  (reset! info x))
+  (when-not (= x @info)
+    (println x)
+    (reset! info x)))
 
 (defn get-info []
   @info)

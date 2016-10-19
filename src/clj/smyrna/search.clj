@@ -98,9 +98,9 @@
 
 (defn get-documents
   [corpus {:keys [offset limit], :or {offset 0, limit 10}, :as q}]
-  (let [documents (map second (get-documents-raw corpus q))
+  (let [documents (get-documents-raw corpus q)
         [_ _ valsets _] (:meta corpus)
-        decode-row (fn [row] (let [res (mapv #(nth %1 %2) valsets row)] (into [(meta/row-key res)] res)))]
+        decode-row (fn [[i row]] (let [res (mapv #(nth %1 %2) valsets row)] (into [((:paths corpus) i)] res)))]
     {:results (mapv decode-row (take limit (drop offset documents))),
      :total (delay (count documents))}))
 
