@@ -57,6 +57,7 @@
 .didaskalia::after { content: \" \"; }
 .didaskalia { font-style: italic; }
 .match { background-color: yellow; margin: 0 5px; }
+.selected { font-size: 150%; }
 </style>")
 
 (defn files

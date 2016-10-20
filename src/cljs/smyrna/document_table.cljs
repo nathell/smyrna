@@ -1,6 +1,6 @@
 (ns smyrna.document-table
   (:require [reagent.core :as reagent :refer [atom]]
-            [re-frame.core :as re-frame :refer [register-handler path register-sub dispatch dispatch-sync subscribe]]
+            [re-frame.core :as re-frame :refer [register-handler path register-sub dispatch dispatch-sync subscribe debug]]
             [smyrna.api :as api]
             [smyrna.utils :refer [register-accessors register-getter dispatch-value]]
             [smyrna.table :refer [table]]
@@ -19,7 +19,7 @@
 (defn toggle-nilable [s el n]
   (toggle (or s (set (range n))) el))
 
-(register-accessors :new-area :browsed-document :document-tab :advanced)
+(register-accessors :new-area :browsed-document :browsed-document-num :document-tab :advanced)
 (register-getter :document-filter)
 (register-getter :metadata)
 (register-getter :contexts)
@@ -69,9 +69,30 @@
                   (fn [state [_ column value cnt]]
                     (update-in state [:document-filter :filters column] toggle-nilable value cnt)))
 
+(register-handler :browse-basic
+                  (fn [state [_ n document]]
+                    (assoc state
+                           :browsed-document-num n
+                           :browsed-document document
+                           :document-tab 1)))
+
 (register-handler :browse
-                  (fn [state [_ document]]
-                    (assoc state :browsed-document document :document-tab 1)))
+                  (fn [state [_ row document]]
+                    (let [df (:document-filter state)]
+                      (assoc state
+                             :browsed-document-num (+ row (* (:page df) (:rows-per-page df)))
+                             :browsed-document document
+                             :document-tab 1))))
+
+(register-handler :browse-num
+                  (fn [state [_ n]]
+                    (api/call "get-documents"
+                              (assoc (filter-params (:document-filter state))
+                                     :corpus (:current-corpus state)
+                                     :offset n :limit 1)
+                              #(when (seq %)
+                                 (dispatch [:browse-basic n (first (first %))])))
+                    state))
 
 (register-handler :create-area
                   (fn [state _]
@@ -119,8 +140,6 @@
        [:a {:class "next", :href "#", :on-click #(dispatch [:move-page 1])} "Następne"]])))
 
 (defn top-overlay []
-  [search]
-  #_
   [:div
    [area-creator]
    [search]])
@@ -181,7 +200,7 @@
          :cell-renderer (fn [{:keys [data]} row col]
                           (let [val (nth (nth data row) (inc col))]
                             [:a {:href "#"
-                                 :on-click #(dispatch [:browse (first (nth data row))])
+                                 :on-click #(dispatch [:browse row (first (nth data row))])
                                  :title val} val]))
          :header-renderer (fn [col title]
                             [main-table-header col title])))
@@ -191,21 +210,57 @@
    [pagination]
    [main-table-proper]])
 
+(defn iframe-matches []
+  (let [iframe (js/document.getElementById "browsed")
+        doc (-> iframe .-contentWindow .-document)
+        matches (.getElementsByClassName doc "match")]
+    (vec (js/Array.prototype.slice.call matches))))
+
+(defn indices [pred coll]
+   (keep-indexed #(when (pred %2) %1) coll))
+
+(defn advance-match [delta]
+  (let [matches (iframe-matches)
+        current (first (indices #(.contains (.-classList %) "selected") matches))
+        nxt (-> (if current (+ current delta) 0) (max 0) (min (dec (count matches))))]
+    (when (seq matches)
+      (when current
+        (.remove (.-classList (matches current)) "selected"))
+      (.add (.-classList (matches nxt)) "selected")
+      (.scrollIntoView (matches nxt)))))
+
+(defn advance-document-button [label delta]
+  (let [browsed-document-num (subscribe [:browsed-document-num])]
+    (fn []
+      [:button {:on-click #(dispatch [:browse-num (+ @browsed-document-num delta)])} label])))
+
 (defn document-browser []
   (let [browsed-document (subscribe [:browsed-document])
         document-filter (subscribe [:document-filter])
         corpus (subscribe [:current-corpus])]
     (fn render-document-browser []
-      [:table {:class "fixed-top document"}
-       [:tbody
-        [:tr [:td [:h1 "Dokument"]]]
-        [:tr [:td
-              (if-let [link @browsed-document]
-                [:iframe {:src
-                          (if-let [phrase (:phrase @document-filter)]
-                            (str "/highlight/" @corpus "/" phrase "/" link)
-                            (str "/corpus/" @corpus "/" link))}]
-                [:h2 "Brak dokumentu do wyświetlenia."])]]]])))
+      (if-let [link @browsed-document]
+        [:table {:class "fixed-top document"}
+         [:tbody
+          [:tr [:td
+                [advance-document-button "<<" -1]
+                (when (:phrase @document-filter)
+                  [:span
+                   [:button {:on-click #(advance-match -1)} "<"]
+                   [:button {:on-click #(advance-match 1)}  ">"]])
+                [advance-document-button ">>" 1]]]
+          [:tr [:td
+                [:div
+                 [:iframe {:id "browsed"
+                           :on-load #(let [slf (js/document.getElementById "browsed")
+                                           doc (-> slf .-contentWindow .-document)]
+                                       nil #_
+                                       (js/alert (str "Found matches: " (.-length (.getElementsByClassName doc "match")))))
+                           :src
+                           (if-let [phrase (:phrase @document-filter)]
+                             (str "/highlight/" @corpus "/" phrase "/" link)
+                             (str "/corpus/" @corpus "/" link))}]]]]]]
+        [:h2 "Brak dokumentu do wyświetlenia."]))))
 
 (defn document-table []
   [:table {:class "fixed-top documents"}
