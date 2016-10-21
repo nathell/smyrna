@@ -22,13 +22,13 @@
                  [org.clojure/clojurescript "1.7.228" :scope "provided"]
                  [reagent "0.6.0-alpha" :exclusions [org.clojure/tools.reader]]
                  [cljs-http "0.1.39"]
-                 [cljsjs/fixed-data-table "0.6.1-0" :exclusions [cljsjs/react]]]
+                 [cljsjs/fixed-data-table "0.6.3-0" :exclusions [cljsjs/react]]]
   :plugins [[lein-environ "1.0.2"]
             [lein-cljsbuild "1.1.1"]
             [lein-asset-minifier "0.2.4" :exclusions [org.clojure/clojure]]
             [deraen/lein-less4j "0.5.0"]]
   :less {:source-paths ["src/css"]
-         :target-path "target/resources/public/css"}
+         :target-path "resources/public/css"}
   :main smyrna.server
   :clean-targets ^{:protect false}
     [:target-path
@@ -37,8 +37,8 @@
   :source-paths ["src/clj" "src/cljc"]
   :resource-paths ["resources" "target/cljsbuild" "target/resources"]
   :minify-assets {:assets
-                  {"resources/public/css/site.min.css"
-                   "resources/public/css/site.css"}}
+                  {"resources/public/css/root.min.css"
+                   "resources/public/css/root.css"}}
   :cljsbuild {:builds {:app {:source-paths ["src/cljs" "src/cljc"]
                              :compiler {:output-to "target/cljsbuild/public/js/app.js"
                                         :output-dir "target/cljsbuild/public/js/out"
