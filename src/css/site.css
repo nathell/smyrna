@@ -257,6 +257,19 @@ button, input, select {
     height: 100%;
 }
 
+.document tr.navigation td:nth-child(1) {
+    text-align: left;
+    min-width: 100px;
+}
+
+.document tr.navigation td:nth-child(2) {
+    text-align: center;
+}
+
+.document tr.navigation td:nth-child(3) {
+    min-width: 100px;
+    text-align: right;
+}
 
 ul.tree li.dir {
     list-style-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAAS1BMVEUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADmYDp0AAAAGHRSTlMAAQIGCQsNDx4gOj0/S7K1t7m6wNXX8f27/IRqAAAASklEQVQYV73KOQ6AMBQDUcNn38Keuf9JKQhKBD2v88jSR2ZmebLbE/BjDHsjqSB+MEk6AMBPZQiy2+CeEBg/ha2zRD+rXkksld4udq4FLUYESkcAAAAASUVORK5CYII=);

@@ -91,7 +91,7 @@
                                      :corpus (:current-corpus state)
                                      :offset n :limit 1)
                               #(when (seq %)
-                                 (dispatch [:browse-basic n (first (first %))])))
+                                 (dispatch [:browse-basic n (first %)])))
                     state))
 
 (register-handler :create-area
@@ -200,7 +200,7 @@
          :cell-renderer (fn [{:keys [data]} row col]
                           (let [val (nth (nth data row) (inc col))]
                             [:a {:href "#"
-                                 :on-click #(dispatch [:browse row (first (nth data row))])
+                                 :on-click #(dispatch [:browse row (nth data row)])
                                  :title val} val]))
          :header-renderer (fn [col title]
                             [main-table-header col title])))
@@ -234,22 +234,43 @@
     (fn []
       [:button {:on-click #(dispatch [:browse-num (+ @browsed-document-num delta)])} label])))
 
+(defn meta-item [key]
+  (let [document-table (subscribe [:document-table])
+        browsed-document (subscribe [:browsed-document])]
+    (fn render-meta-item []
+      (when-let [doc @browsed-document]
+        (let [meta-map (zipmap (map (comp keyword first) (:metadata @document-table)) (rest doc))]
+          [:span (meta-map key)])))))
+
+(defn metryczka []
+  [:p
+   [meta-item :term] ". kadencja, posiedzenie nr " [meta-item :pos] ", dzień " [meta-item :dzien]
+   " (" [meta-item :data] ")"
+   [:br]
+   [:span {:style {:font-weight "bold" :font-size "30px"}}
+    [meta-item :kto]]
+   [:br]
+   [:i [meta-item :tytul]]])
+
 (defn document-browser []
   (let [browsed-document (subscribe [:browsed-document])
         document-filter (subscribe [:document-filter])
         corpus (subscribe [:current-corpus])]
     (fn render-document-browser []
-      (if-let [link @browsed-document]
+      (if-let [doc @browsed-document]
         [:table {:class "fixed-top document"}
          [:tbody
-          [:tr [:td
-                [advance-document-button "<<" -1]
-                (when (:phrase @document-filter)
-                  [:span
-                   [:button {:on-click #(advance-match -1)} "<"]
-                   [:button {:on-click #(advance-match 1)}  ">"]])
-                [advance-document-button ">>" 1]]]
-          [:tr [:td
+          [:tr {:class "navigation"}
+           [:td
+            [advance-document-button "<<" -1]
+            (when (:phrase @document-filter)
+              [:button {:on-click #(advance-match -1)} "<"])]
+           [:td [metryczka]]
+           [:td
+            (when (:phrase @document-filter)
+              [:button {:on-click #(advance-match 1)}  ">"])
+            [advance-document-button ">>" 1]]]
+          [:tr [:td {:col-span 3}
                 [:div
                  [:iframe {:id "browsed"
                            :on-load #(let [slf (js/document.getElementById "browsed")
@@ -258,8 +279,8 @@
                                        (js/alert (str "Found matches: " (.-length (.getElementsByClassName doc "match")))))
                            :src
                            (if-let [phrase (:phrase @document-filter)]
-                             (str "/highlight/" @corpus "/" phrase "/" link)
-                             (str "/corpus/" @corpus "/" link))}]]]]]]
+                             (str "/highlight/" @corpus "/" phrase "/" (first doc))
+                             (str "/corpus/" @corpus "/" (first doc)))}]]]]]]
         [:h2 "Brak dokumentu do wyświetlenia."]))))
 
 (defn document-table []

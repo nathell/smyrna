@@ -53,6 +53,7 @@
 
 (def styles
   "<style>
+body { font: 18pt/24pt Helvetica, Arial, sans-serif; }
 .didaskalia::before { content: \" \"; }
 .didaskalia::after { content: \" \"; }
 .didaskalia { font-style: italic; }
