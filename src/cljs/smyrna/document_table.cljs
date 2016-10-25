@@ -97,7 +97,7 @@
 (register-handler :create-area
                   (fn [state _]
                     (let [params (filter-params (:document-filter state))]
-                      (api/call "create-context" {:name (:new-area state), :description params})
+                      (api/call "create-context" {:name (:new-area state), :description params, :corpus (:current-corpus state)})
                       (update-in state [:contexts] conj [name params]))))
 
 (register-handler :set-search-context
@@ -107,7 +107,9 @@
 (defn area-creator []
   [:div
    [:input {:type "text", :placeholder "Wpisz nazwę obszaru", :on-change (dispatch-value :set-new-area)}]
-   [:button {:on-click #(dispatch [:create-area])} "Utwórz obszar"]])
+   [:button {:on-click #(do (dispatch [:create-area])
+                            (dispatch [:set-modal nil]))}
+    "Utwórz obszar"]])
 
 (defn search []
   (let [contexts (subscribe [:contexts])
@@ -128,6 +130,7 @@
                   [:option {:value opt, #_:selected #_(= (:within @search-params) opt)} opt]))])
        (if @advanced
          [:div {:class "group"}
+          [:button {:on-click #(dispatch [:set-modal area-creator])} "Utwórz obszar"]
           [:button {:on-click #(dispatch [:reset-filters])} "Resetuj filtry"]])])))
 
 (defn pagination []
@@ -141,7 +144,6 @@
 
 (defn top-overlay []
   [:div
-   [area-creator]
    [search]])
 
 (defn filter-checkboxes-content [labels key]
