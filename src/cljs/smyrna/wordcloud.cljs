@@ -51,7 +51,7 @@
 
 (register-handler :update-wordcloud
                   (fn [state _]
-                    (api/call "compare-contexts" [(:wordcloud-area state) nil (:current-corpus state)] #(dispatch [:set-wordcloud-data %]))
+                    (api/call "compare-contexts" [(:wordcloud-area state) "Cały korpus" (:current-corpus state)] #(dispatch [:set-wordcloud-data %]))
                     state))
 
 (defn displayer-render [data]

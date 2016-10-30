@@ -21,14 +21,14 @@
   (mapv (comp keyword first) metadata))
 
 (register-handler :set-metadata
-                  (fn [state [_ {:keys [metadata contexts]}]]
+                  (fn [state [_ {:keys [metadata contexts custom]}]]
                     (let [meta-columns (get-columns metadata)]
                       (-> state
                           (assoc-in [:document-table :metadata] metadata)
                           (assoc-in [:document-table :columns] (get-columns metadata))
                           (assoc-in [:document-table :shown-columns] (get-shown-columns metadata))
                           (assoc-in [:document-table :column-order] (get-shown-columns metadata))
-                          (assoc :contexts contexts)))))
+                          (assoc :contexts contexts :custom custom)))))
 
 (defn get-corpus-info [corpus]
   (api/call "get-corpus-info" {:corpus corpus} #(dispatch [:set-metadata %])))

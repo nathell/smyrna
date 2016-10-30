@@ -51,16 +51,6 @@
   ([x] (edn-response {} x))
   ([extra-header x] (edn-response-raw extra-header (pr-str x))))
 
-(def styles
-  "<style>
-body { font: 18pt/24pt Helvetica, Arial, sans-serif; }
-.didaskalia::before { content: \" \"; }
-.didaskalia::after { content: \" \"; }
-.didaskalia { font-style: italic; }
-.match { background-color: yellow; margin: 0 5px; }
-.selected { font-size: 150%; }
-</style>")
-
 (defn files
   [dir]
   (->>
@@ -82,6 +72,20 @@ body { font: 18pt/24pt Helvetica, Arial, sans-serif; }
                  ~content)
               content))))
 
+(defn display-document [corpus phrase doc-id]
+  (let [corpus (getc corpus)
+        i (.indexOf (:paths corpus) doc-id)
+        html-header (when-let [custom (:custom corpus)]
+                      (:html-header custom))]
+    (when (>= i 0)
+      (str html-header
+           (html (corpus/deserialize
+                  (if phrase
+                    (search/highlight-doc corpus
+                                          (corpus/read-document corpus i :lookup false)
+                                          phrase)
+                    (corpus/read-document corpus i))))))))
+
 (defroutes routes
   (GET "/" [] loading-page)
   ;; (GET "/frequency-list/:area" [area]
@@ -90,24 +94,16 @@ body { font: 18pt/24pt Helvetica, Arial, sans-serif; }
   ;;                  "Content-Disposition" (format "attachment; filename=\"lista-frekwencyjna-%s.csv\"" area)},
   ;;        :body (with-out-str (csv/write-csv *out* (search/frequency-list corpus area)))})
   (GET "/highlight/:corpus/:phrase/*" [corpus phrase *]
-       (let [corpus (getc corpus)
-             i (.indexOf (:paths corpus) *)]
-         (when (>= i 0)
-           (let [doc (corpus/read-document corpus i :lookup false)]
-             (str styles
-                  (html (corpus/deserialize (search/highlight-doc corpus doc phrase))))))))
+       (display-document corpus phrase *))
   (GET "/corpus/:corpus/*" [corpus *]
-       (let [corpus (getc corpus)
-             i (.indexOf (:paths corpus) *)]
-         (when (>= i 0)
-           (str styles
-                (html (corpus/deserialize (corpus/read-document corpus i)))))))
+       (display-document corpus nil *))
   (api get-corpora []
        (corpus/list-corpora))
   (api get-documents params
        (:results (search/get-documents (getc (:corpus params)) params)))
   (api get-corpus-info {:keys [corpus]}
        {:metadata (meta/get-header (:meta (getc corpus))),
+        :custom (:custom (getc corpus)),
         :contexts (vec (sort-by first (map (fn [[k v]] [k (:description v)]) @search/contexts)))})
   (api get-task-info []
        (task/get-info))

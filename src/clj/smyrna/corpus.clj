@@ -104,6 +104,8 @@
         :raw-meta-fn raw-meta-fn
         :meta (read-gzipped-edn (raw-meta-fn))
         :paths (read-gzipped-edn (buffer-part buf (elems "paths.edn.gz")))
+        :custom (when-let [elem (elems "corpus.edn.gz")]
+                  (read-gzipped-edn (buffer-part buf elem)))
         :image (long-subbuffer buf (elems "image"))
         :index (long-subbuffer buf (elems "index"))
         :offset (int-subbuffer buf (elems "offset"))

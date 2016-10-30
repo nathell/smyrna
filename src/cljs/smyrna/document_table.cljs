@@ -1,5 +1,7 @@
 (ns smyrna.document-table
-  (:require [reagent.core :as reagent :refer [atom]]
+  (:require-macros [reagent.ratom :refer [reaction]])
+  (:require [clojure.walk :refer [postwalk]]
+            [reagent.core :as reagent :refer [atom]]
             [re-frame.core :as re-frame :refer [register-handler path register-sub dispatch dispatch-sync subscribe debug]]
             [smyrna.api :as api]
             [smyrna.utils :refer [register-accessors register-getter dispatch-value]]
@@ -96,8 +98,9 @@
 
 (register-handler :create-area
                   (fn [state _]
-                    (let [params (filter-params (:document-filter state))]
-                      (api/call "create-context" {:name (:new-area state), :description params, :corpus (:current-corpus state)})
+                    (let [params (filter-params (:document-filter state))
+                          name (:new-area state)]
+                      (api/call "create-context" {:name name, :description params, :corpus (:current-corpus state)})
                       (update-in state [:contexts] conj [name params]))))
 
 (register-handler :set-search-context
@@ -169,8 +172,8 @@
    [filter-header key]
    [filter-checkboxes-content labels key]
    [:div {:class "buttons"}
-    [:button {:on-click #(dispatch [:checkboxes-set-all key])} "Wszystkie"]
-    [:button {:on-click #(dispatch [:checkboxes-clear-all key])} "Żodyn"]
+    [:button {:on-click #(dispatch [:checkboxes-set-all key])} "Zaznacz wszystkie"]
+    [:button {:on-click #(dispatch [:checkboxes-clear-all key])} "Wyczyść wszystkie"]
     [:button {:on-click #(do (dispatch [:set-modal nil])
                              (dispatch [:refresh-table]))} "OK"]]])
 
@@ -244,15 +247,16 @@
         (let [meta-map (zipmap (map (comp keyword first) (:metadata @document-table)) (rest doc))]
           [:span (meta-map key)])))))
 
-(defn metryczka []
-  [:p
-   [meta-item :term] ". kadencja, posiedzenie nr " [meta-item :pos] ", dzień " [meta-item :dzien]
-   " (" [meta-item :data] ")"
-   [:br]
-   [:span {:style {:font-weight "bold" :font-size "30px"}}
-    [meta-item :kto]]
-   [:br]
-   [:i [meta-item :tytul]]])
+(register-sub :vignette #(reaction (-> %1 deref :custom :vignette)))
+
+(defn vignette
+  []
+  (let [v (subscribe [:vignette])]
+    (fn render-vignette []
+      (postwalk #(if (and (keyword? %) (= (namespace %) "meta"))
+                   [meta-item (keyword (name %))]
+                   %)
+                @v))))
 
 (defn document-browser []
   (let [browsed-document (subscribe [:browsed-document])
@@ -267,7 +271,7 @@
             [advance-document-button "<<" -1]
             (when (:phrase @document-filter)
               [:button {:on-click #(advance-match -1)} "<"])]
-           [:td [metryczka]]
+           [:td [vignette]]
            [:td
             (when (:phrase @document-filter)
               [:button {:on-click #(advance-match 1)}  ">"])
