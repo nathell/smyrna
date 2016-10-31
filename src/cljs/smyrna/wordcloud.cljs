@@ -3,7 +3,8 @@
   (:require [reagent.core :as reagent]
             [re-frame.core :as re-frame :refer [register-handler path register-sub dispatch dispatch-sync subscribe]]
             [smyrna.api :as api]
-            [smyrna.utils :refer [register-accessors dispatch-value area-selector]]))
+            [smyrna.utils :refer [register-accessors dispatch-value area-selector]]
+            cljsjs.d3))
 
 (register-accessors :wordcloud-area :wordcloud-data)
 
