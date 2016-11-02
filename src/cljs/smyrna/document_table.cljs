@@ -116,14 +116,15 @@
 
 (defn search []
   (let [contexts (subscribe [:contexts])
+        phrase (subscribe [:phrase])
         advanced (subscribe [:advanced])]
     (fn render-search []
-      [:div {:class "search"}
+      [:form {:class "search" :on-submit #(do (dispatch [:refresh-table]) nil)}
        [:div {:class "group"}
-        [:input {:class "phrase", :type "text", :autoFocus true, :placeholder "Wpisz szukaną frazę", :on-change (dispatch-value :set-phrase)}]]
+        [:input {:class "phrase", :type "text", :autoFocus true, :placeholder "Wpisz szukaną frazę", :on-change (dispatch-value :set-phrase), :value @phrase}]]
        [:div {:class "group"}
-        [:button {:class "search-button" :on-click #(dispatch [:refresh-table])} "Szukaj"]
-        [:a {:class "advanced" :href "#" :on-click #(dispatch [:set-advanced (not @advanced)])} (if @advanced "Ukryj zaawansowane opcje" "Pokaż zaawansowane opcje »")]]
+        [:input {:type "submit", :value "Szukaj", :class "search-button"}]
+        [:a {:class "advanced" :href "#" :on-click #(dispatch [:set-advanced (not @advanced)])} (if @advanced "« Ukryj zaawansowane opcje" "Pokaż zaawansowane opcje »")]]
        (if @advanced
          [:div {:class "group"}
           "Obszar: "
@@ -248,6 +249,7 @@
           [:span (meta-map key)])))))
 
 (register-sub :vignette #(reaction (-> %1 deref :custom :vignette)))
+(register-sub :phrase #(reaction (-> %1 deref :document-filter :phrase)))
 
 (defn vignette
   []
