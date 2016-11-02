@@ -11,10 +11,18 @@
   (api/call "get-corpora" {} #(dispatch [:set-corpora-list %])))
 
 (defn get-columns
-  [metadata]
-  (let [w (min 200 (/ (- js/window.innerWidth 76) (count metadata)))]
-    (into {} (for [[name _] metadata]
-               [(keyword name) {:title (string/capitalize name), :width w}]))))
+  [metadata custom]
+  (let [maxw (- js/window.innerWidth 76)
+        w (min 200 (/ maxw (count metadata)))
+        totalw (when custom (apply + (map :width (vals (:columns custom)))))]
+    (into {} (for [[name _] metadata :let [k (keyword name)]]
+               [k {:title (or (when custom (:label (k (:columns custom)))) (string/capitalize name)),
+                   :width (or (when custom (let [w' (:width (k (:columns custom)))]
+                                             (js/console.log name w' maxw totalw)
+                                             (if (zero? w')
+                                               (max 200 (- maxw totalw))
+                                               w')))
+                              w)}]))))
 
 (defn get-shown-columns
   [metadata]
@@ -22,13 +30,12 @@
 
 (register-handler :set-metadata
                   (fn [state [_ {:keys [metadata contexts custom]}]]
-                    (let [meta-columns (get-columns metadata)]
-                      (-> state
-                          (assoc-in [:document-table :metadata] metadata)
-                          (assoc-in [:document-table :columns] (get-columns metadata))
-                          (assoc-in [:document-table :shown-columns] (get-shown-columns metadata))
-                          (assoc-in [:document-table :column-order] (get-shown-columns metadata))
-                          (assoc :contexts contexts :custom custom)))))
+                    (-> state
+                        (assoc-in [:document-table :metadata] metadata)
+                        (assoc-in [:document-table :columns] (get-columns metadata custom))
+                        (assoc-in [:document-table :shown-columns] (get-shown-columns metadata))
+                        (assoc-in [:document-table :column-order] (get-shown-columns metadata))
+                        (assoc :contexts contexts :custom custom))))
 
 (defn get-corpus-info [corpus]
   (api/call "get-corpus-info" {:corpus corpus} #(dispatch [:set-metadata %])))
