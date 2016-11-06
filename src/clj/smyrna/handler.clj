@@ -72,13 +72,16 @@
                  ~content)
               content))))
 
+(def default-header
+  "<style>.match { background-color: yellow; } .selected { font-size: 150%; }</style>")
+
 (defn display-document [corpus phrase doc-id]
   (let [corpus (getc corpus)
         i (.indexOf (:paths corpus) doc-id)
         html-header (when-let [custom (:custom corpus)]
                       (:html-header custom))]
     (when (>= i 0)
-      (str html-header
+      (str default-header html-header
            (html (corpus/deserialize
                   (if phrase
                     (search/highlight-doc corpus

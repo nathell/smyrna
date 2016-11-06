@@ -42,8 +42,8 @@
     (reduce (fn [acc [i segment]]
               ((comp ; order here is last-to-first!
                 #(conj % (tokens segment))
-                (if (starts i) #(into % [[:tag "span"] [:attr "class"] [:text "match"]]) identity)
-                (if (ends i) #(conj % :end) identity))
+                (if (starts i) #(into % [:space [:tag "span"] [:attr "class"] [:text "match"]]) identity)
+                (if (ends i) #(into % [:end :space]) identity))
                acc))
             [] (map-indexed vector doc))))
 

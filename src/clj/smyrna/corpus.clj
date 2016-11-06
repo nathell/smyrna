@@ -156,6 +156,7 @@
     (let [this (first s)]
       (cond
        (= this :end) [(if (empty? text) tree (conj tree (str text))) (next s)]
+       (= this :space) (recur (next s) tree (if space? (.append text " ") text) true)
        (= this :nospace) (recur (next s) tree text false)
        (= (first this) :word) (recur (next s) tree (.append text (if space? (str " " (second this)) (second this))) true)
        (= (first this) :tag) (let [[attrs rst] (deserialize-attrs (next s))
