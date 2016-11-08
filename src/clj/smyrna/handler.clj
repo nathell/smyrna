@@ -91,11 +91,11 @@
 
 (defroutes routes
   (GET "/" [] loading-page)
-  ;; (GET "/frequency-list/:area" [area]
-  ;;       {:status 200,
-  ;;        :headers {"Content-Type" "text/csv; charset=utf-8",
-  ;;                  "Content-Disposition" (format "attachment; filename=\"lista-frekwencyjna-%s.csv\"" area)},
-  ;;        :body (with-out-str (csv/write-csv *out* (search/frequency-list corpus area)))})
+  (GET "/frequency-list/:corpus/:area" [corpus area]
+        {:status 200,
+         :headers {"Content-Type" "text/csv; charset=utf-8",
+                   "Content-Disposition" (format "attachment; filename=\"lista-frekwencyjna-%s.csv\"" area)},
+         :body (with-out-str (csv/write-csv *out* (search/frequency-list (getc corpus) area)))})
   (GET "/highlight/:corpus/:phrase/*" [corpus phrase *]
        (display-document corpus phrase *))
   (GET "/corpus/:corpus/*" [corpus *]

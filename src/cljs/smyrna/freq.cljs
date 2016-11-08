@@ -23,9 +23,10 @@
   (table :frequency-list-table :height 600))
 
 (defn downloader []
-  (let [frequency-list-area (subscribe [:frequency-list-area])]
+  (let [corpus (subscribe [:current-corpus])
+        frequency-list-area (subscribe [:frequency-list-area])]
     (fn render-downloader []
-      [:p [:a {:href (str "/frequency-list/" @frequency-list-area)} "Pobierz jako CSV"]])))
+      [:p [:a {:href (str "/frequency-list/" @corpus "/" @frequency-list-area)} "Pobierz jako CSV"]])))
 
 (defn frequency-lists []
   [:div
