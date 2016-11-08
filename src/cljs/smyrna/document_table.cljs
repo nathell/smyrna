@@ -119,7 +119,7 @@
         phrase (subscribe [:phrase])
         advanced (subscribe [:advanced])]
     (fn render-search []
-      [:form {:class "search" :on-submit #(do (dispatch [:refresh-table]) nil)}
+      [:form {:class "search" :on-submit #(do (.preventDefault %1) (dispatch [:refresh-table]) false)}
        [:div {:class "group"}
         [:input {:class "phrase", :type "text", :autoFocus true, :placeholder "Wpisz szukaną frazę", :on-change (dispatch-value :set-phrase), :value @phrase}]]
        [:div {:class "group"}

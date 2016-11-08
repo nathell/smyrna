@@ -18,7 +18,6 @@
     (into {} (for [[name _] metadata :let [k (keyword name)]]
                [k {:title (or (when custom (:label (k (:columns custom)))) (string/capitalize name)),
                    :width (or (when custom (let [w' (:width (k (:columns custom)))]
-                                             (js/console.log name w' maxw totalw)
                                              (if (zero? w')
                                                (max 200 (- maxw totalw))
                                                w')))

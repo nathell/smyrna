@@ -39,13 +39,15 @@
         l (count lemmata)
         starts (set (corpus/phrase-positions corpus lemmata doc))
         ends (set (map (partial + l) starts))]
-    (reduce (fn [acc [i segment]]
-              ((comp ; order here is last-to-first!
-                #(conj % (tokens segment))
-                (if (starts i) #(into % [:space [:tag "span"] [:attr "class"] [:text "match"]]) identity)
-                (if (ends i) #(into % [:end :space]) identity))
-               acc))
-            [] (map-indexed vector doc))))
+    (if ((set lemmata) -1)
+      (mapv tokens doc)
+      (reduce (fn [acc [i segment]]
+                ((comp ; order here is last-to-first!
+                  #(conj % (tokens segment))
+                  (if (starts i) #(into % [:space [:tag "span"] [:attr "class"] [:text "match"]]) identity)
+                  (if (ends i) #(into % [:end :space]) identity))
+                 acc))
+              [] (map-indexed vector doc)))))
 
 (defn filter-fn
   [header-indexed valsets [k v]]
