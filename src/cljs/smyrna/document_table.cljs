@@ -297,5 +297,4 @@
     [:tr [:td [top-overlay]]]
     [:tr [:td [tabbar :document-tab
                ["Lista dokumentów" [main-table]
-                "Pojedynczy dokument" [document-browser]
-                "KWIC" [:h1 "KWIC"]]]]]]])
+                "Pojedynczy dokument" [document-browser]]]]]]])

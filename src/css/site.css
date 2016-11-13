@@ -6,7 +6,7 @@ html, body {
     height: 100%;
 }
 
-#app, .nav-container, .fullsize {
+#app, .nav-container, .fullsize, .wordcloud {
     height: 100%;
 }
 
@@ -300,4 +300,17 @@ ul.tree li.file {
     -webkit-column-width: 125px;
     -moz-column-width: 125px;
     column-width: 125px;
+}
+
+.spinner {
+    height: 100%;
+}
+
+.spinner img {
+    display: block;
+    margin: 0 auto 10px auto;
+}
+
+.spinner p {
+    text-align: center;
 }

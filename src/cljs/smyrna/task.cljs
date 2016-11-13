@@ -7,14 +7,17 @@
 
 (register-accessors :task-info)
 
+(defn spinner [info]
+  [:div {:class "spinner"}
+   [:img {:src "/images/spinner.gif"}]
+   (when info [:p info])])
+
 (defn browser []
   (let [info (subscribe [:task-info])]
     (fn []
       [:div {:class "task"}
        (when-let [i @info]
-         [:div
-          [:img {:src "/images/spinner.gif"}]
-          i])])))
+         [spinner i])])))
 
 (defn get-task-info
   []
