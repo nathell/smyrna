@@ -1,8 +1,8 @@
 (ns smyrna.core
-  (:require [re-frame.core :as re-frame :refer [register-handler path register-sub dispatch dispatch-sync subscribe]]
+  (:require [re-frame.core :as re-frame :refer [reg-event-fx reg-event-db dispatch dispatch-sync subscribe]]
             [reagent.core :as reagent]
             [smyrna.task :as task]
-            [smyrna.utils :refer [register-accessors register-getter dispatch-value]]
+            [smyrna.utils :refer [reg-accessors]]
             [smyrna.corpora :refer [corpora] :as corpora]
             [smyrna.document-table :refer [document-table]]
             [smyrna.wordcloud :refer [wordcloud]]
@@ -30,17 +30,18 @@
                    :shown-columns [:name :num-documents]}
    :document-table {:data []}})
 
-(register-handler :initialize
-  (fn [state _]
-    (corpora/get-corpora)
-    (corpora/get-files "/")
-    (task/get-task-info)
-    (merge state initial-state)))
+(reg-accessors :tab :modal)
 
-(register-accessors :tab :modal)
+(reg-event-fx
+ :initialize
+ (fn [{db :db} _]
+   {:db initial-state
+    :dispatch-n [[:get-corpora] [:get-files "/"] [:get-task-info]]}))
 
-(register-handler :set-corpora-list (fn [state [_ corpora]]
-                                      (assoc-in state [:corpora-table :data] corpora)))
+(reg-event-db
+ :set-corpora-list
+ (fn [db [_ corpora]]
+   (assoc-in db [:corpora-table :data] corpora)))
 
 (defn about []
   [:div {:class "about"}
@@ -57,11 +58,10 @@
 (defn modal-box
   []
   (let [modal (subscribe [:modal])]
-    (fn render-modal-box []
-      [:div {:class (if @modal "modal-dialog modal-visible" "modal-dialog")}
-       (when @modal
-         [:div
-          [:a {:class "close" :href "#" :on-click #(dispatch [:set-modal nil])} "✖"] [@modal]])])))
+    [:div {:class (if @modal "modal-dialog modal-visible" "modal-dialog")}
+     (when @modal
+       [:div
+        [:a {:class "close" :href "#" :on-click #(dispatch [:set-modal nil])} "✖"] [@modal]])]))
 
 (defn main-tab-disabled?
   []
@@ -71,19 +71,18 @@
 
 (defn root []
   (let [modal (subscribe [:modal])]
-    (fn render-root []
-      [:div {:class "fullsize"}
-       [modal-box]
-       [:div {:class (if @modal "modal-disabled" "fullsize")}
-        [tabbar :tab
-         ["Smyrna" #(dispatch [:set-modal about])
-          "Korpusy" [corpora]
-          "Wyszukiwanie" [document-table]
-          "Chmury słów" [wordcloud]
-          "Listy frekwencyjne" [frequency-lists]
-          :glue nil
-          :inline [corpora/corpus-selector]]
-         :disabled-item? (main-tab-disabled?)]]])))
+    [:div {:class "fullsize"}
+     [modal-box]
+     [:div {:class (if @modal "modal-disabled" "fullsize")}
+      [tabbar :tab
+       ["Smyrna" #(dispatch [:set-modal about])
+        "Korpusy" [corpora]
+        "Wyszukiwanie" [document-table]
+        "Chmury słów" [wordcloud]
+        "Listy frekwencyjne" [frequency-lists]
+        :glue nil
+        :inline [corpora/corpus-selector]]
+       :disabled-item? (main-tab-disabled?)]]]))
 
 (defn mount-root []
   (dispatch-sync [:initialize])

@@ -1,28 +1,35 @@
 (ns smyrna.utils
-  (:require-macros [reagent.ratom :refer [reaction]])
-  (:require [re-frame.core :as re-frame :refer [register-handler path register-sub dispatch dispatch-sync subscribe]]
-            [smyrna.api :as api]))
+  (:require [re-frame.core :refer [reg-event-db reg-sub dispatch-sync subscribe]]))
 
 (defn setter-event
   [k]
   (keyword (str "set-" (name k))))
 
-(defn register-setter
-  ([k] (register-setter k (setter-event k)))
+(defn reg-setter
+  ([k] (reg-setter k (setter-event k)))
   ([k handler-name]
-   (register-handler handler-name
-                     (fn [state [_ new-value]]
-                       (assoc state k new-value)))))
+   (reg-event-db handler-name
+                 (fn [db [_ new-value]]
+                   (assoc db k new-value)))))
 
-(defn register-getter
+(defn reg-getter
   [k]
-  (register-sub k #(reaction (k @%1))))
+  (reg-sub k (fn [db _] (k db))))
 
-(defn register-accessors
+(defn reg-getters
   [& ks]
   (doseq [k ks]
-    (register-setter k)
-    (register-getter k)))
+    (reg-getter k)))
+
+(defn reg-setters
+  [& ks]
+  (doseq [k ks]
+    (reg-setter k)))
+
+(defn reg-accessors
+  [& ks]
+  (apply reg-getters ks)
+  (apply reg-setters ks))
 
 (defn dispatch-value
   [ev & args]
@@ -34,8 +41,7 @@
   ([dispatcher] (area-selector dispatcher "Cały korpus"))
   ([dispatcher nil-name]
    (let [contexts (subscribe [:contexts])]
-     (fn render-area-selector []
-       (into [:select {:on-change (dispatch-value dispatcher)}
-              [:option nil-name]]
-             (for [[opt _] @contexts]
-               [:option {:value opt} opt]))))))
+     (into [:select {:on-change (dispatch-value dispatcher)}
+            [:option nil-name]]
+           (for [[opt _] @contexts]
+             [:option {:value opt} opt])))))

@@ -1,11 +1,9 @@
 (ns smyrna.task
-  (:require-macros [reagent.ratom :refer [reaction]])
   (:require [clojure.string :as string]
-            [re-frame.core :as re-frame :refer [register-handler path register-sub dispatch subscribe]]
-            [smyrna.api :as api]
-            [smyrna.utils :refer [register-accessors register-getter dispatch-value area-selector]]))
+            [re-frame.core :as re-frame :refer [reg-event-fx dispatch subscribe]]
+            [smyrna.utils :refer [reg-getters]]))
 
-(register-accessors :task-info)
+(reg-getters :task-info)
 
 (defn spinner [info]
   [:div {:class "spinner"}
@@ -14,18 +12,19 @@
 
 (defn browser []
   (let [info (subscribe [:task-info])]
-    (fn []
-      [:div {:class "task"}
-       (when-let [i @info]
-         [spinner i])])))
+    [:div {:class "task"}
+     (when-let [i @info]
+       [spinner i])]))
 
-(defn get-task-info
-  []
-  (api/call "get-task-info" nil
-            (fn [x]
-              (dispatch [:set-task-info x])
-              (if x
-                (do
-                  (js/window.setTimeout get-task-info 200)
-                  (dispatch [:set-modal browser]))
-                (dispatch [:set-modal nil])))))
+(reg-event-fx
+ :update-task-info
+ (fn [{db :db} [_ x]]
+   (if x
+     {:db (assoc db :task-info x :modal browser)
+      :dispatch-later [{:ms 200 :dispatch [:get-task-info]}]}
+     {:db (assoc db :task-info nil :modal nil)})))
+
+(reg-event-fx
+ :get-task-info
+ (fn [_ _]
+   {:api ["get-task-info" nil :update-task-info]}))

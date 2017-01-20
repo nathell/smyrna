@@ -1,14 +1,17 @@
 (ns smyrna.corpora
-  (:require-macros [reagent.ratom :refer [reaction]])
   (:require [clojure.string :as string]
-            [re-frame.core :as re-frame :refer [register-handler path register-sub dispatch subscribe]]
+            [re-frame.core :as re-frame :refer [reg-event-db reg-event-fx reg-sub dispatch subscribe]]
             [smyrna.api :as api]
             [smyrna.task :as task]
             [smyrna.table :refer [table]]
-            [smyrna.utils :refer [register-accessors register-getter dispatch-value area-selector]]))
+            [smyrna.utils :refer [reg-accessors reg-getters dispatch-value area-selector]]))
 
-(defn get-corpora []
-  (api/call "get-corpora" {} #(dispatch [:set-corpora-list %])))
+(reg-accessors :filepicker-path :filepicker-file :new-corpus-name)
+(reg-getters :current-corpus :corpora-table)
+
+(reg-sub :files
+         (fn [db [_ path]]
+           (get-in db [:files (or path "/")])))
 
 (defn get-columns
   [metadata custom]
@@ -27,46 +30,54 @@
   [metadata]
   (mapv (comp keyword first) metadata))
 
-(register-handler :set-metadata
-                  (fn [state [_ {:keys [metadata contexts custom]}]]
-                    (-> state
-                        (assoc-in [:document-table :metadata] metadata)
-                        (assoc-in [:document-table :columns] (get-columns metadata custom))
-                        (assoc-in [:document-table :shown-columns] (get-shown-columns metadata))
-                        (assoc-in [:document-table :column-order] (get-shown-columns metadata))
-                        (assoc :contexts contexts :custom custom))))
+(reg-event-db
+ :set-files
+ (fn [db [_ path files]]
+   (assoc-in db [:files path] files)))
 
-(defn get-corpus-info [corpus]
-  (api/call "get-corpus-info" {:corpus corpus} #(dispatch [:set-metadata %])))
+(reg-event-db
+ :set-metadata
+ (fn [db [_ {:keys [metadata contexts custom]}]]
+   (-> db
+       (assoc-in [:document-table :metadata] metadata)
+       (assoc-in [:document-table :columns] (get-columns metadata custom))
+       (assoc-in [:document-table :shown-columns] (get-shown-columns metadata))
+       (assoc-in [:document-table :column-order] (get-shown-columns metadata))
+       (assoc :contexts contexts :custom custom))))
 
-(defn get-files [path]
-  (api/call "tree" path #(dispatch [:set-files path %])))
+(reg-event-fx
+ :get-corpora
+ (fn [_ _]
+   {:api ["get-corpora" {} :set-corpora-list]}))
 
-(register-accessors :filepicker-path :filepicker-file :new-corpus-name)
+(reg-event-fx
+ :get-corpus-info
+ (fn [_ [_ corpus]]
+   {:api ["get-corpus-info" {:corpus corpus} :set-metadata]}))
 
-(register-getter :current-corpus)
+(reg-event-fx
+ :get-files
+ (fn [_ [_ path]]
+   {:api ["tree" path :set-files path]}))
 
-(register-sub :files (fn [state [_ path]] (reaction (get-in @state [:files (or path "/")]))))
-(register-handler :set-files (fn [state [_ path files]] (assoc-in state [:files path] files)))
+(reg-event-fx
+ :create-corpus
+ (fn [{db :db} _]
+   {:api ["create-corpus" {:name (:new-corpus-name db)
+                           :file (:file (:filepicker-file db))}]
+    :dispatch [:get-task-info]}))
 
-(register-handler :create-corpus
-                  (fn [state _]
-                    (api/call "create-corpus" {:name (:new-corpus-name state), :file (:file (:filepicker-file state))})
-                    (task/get-task-info)
-                    state))
+(reg-event-fx
+ :init-corpus
+ (fn [{db :db} _]
+   {:dispatch-n [[:get-corpus-info (:current-corpus db)]
+                 [:refresh-table]]}))
 
-(register-handler :init-corpus
-                  (fn [state _]
-                    (get-corpus-info (:current-corpus state))
-                    (dispatch [:refresh-table])
-                    state))
-
-(register-handler :switch-corpus
-                  (fn [state [_ corpus]]
-                    (dispatch [:init-corpus])
-                    (assoc state :current-corpus corpus :tab 2)))
-
-(register-getter :corpora-table)
+(reg-event-fx
+ :switch-corpus
+ (fn [{db :db} [_ corpus]]
+   {:dispatch [:init-corpus]
+    :db (assoc db :current-corpus corpus :tab 2)}))
 
 (defn drop-ext [f]
   (string/replace f #"\..*" ""))
@@ -76,36 +87,34 @@
   ([root]
    (let [path (subscribe [:filepicker-path])
          files (subscribe [:files root])]
-     (fn render-directory-tree []
-       (reduce into [:ul {:class "tree"}]
-               (for [{:keys [dir file]} @files
-                     :let [subtree (str root (if (= root "/") "" "/") file)
-                           on-path? (and dir @path (string/starts-with? @path subtree))]]
-                 [[:li {:class (if dir (if on-path? "open-dir" "dir") "file")}
-                   (if on-path?
-                     [:b file]
-                     [:a {:href "#", :on-click #(do (get-files subtree)
-                                                    (when dir (dispatch [:set-filepicker-path subtree]))
-                                                    (dispatch [:set-filepicker-file {:type (if dir :dir :file), :file subtree}])
-                                                    (dispatch [:set-new-corpus-name (drop-ext file)]))}
-                      file])]
-                  (when on-path?
-                    [directory-tree subtree])]))))))
+     (reduce into [:ul {:class "tree"}]
+             (for [{:keys [dir file]} @files
+                   :let [subtree (str root (if (= root "/") "" "/") file)
+                         on-path? (and dir @path (string/starts-with? @path subtree))]]
+               [[:li {:class (if dir (if on-path? "open-dir" "dir") "file")}
+                 (if on-path?
+                   [:b file]
+                   [:a {:href "#", :on-click #(do (dispatch [:get-files subtree])
+                                                  (when dir (dispatch [:set-filepicker-path subtree]))
+                                                  (dispatch [:set-filepicker-file {:type (if dir :dir :file), :file subtree}])
+                                                  (dispatch [:set-new-corpus-name (drop-ext file)]))}
+                    file])]
+                (when on-path?
+                  [directory-tree subtree])])))))
 
 (defn creator []
   (let [file (subscribe [:filepicker-file])
         name (subscribe [:new-corpus-name])]
-    (fn render-creator []
-      [:div {:class "corpora-creator"}
-       [:h2 "Nowy korpus"]
-       [:p "Wybierz plik CSV z metadanymi lub katalog korpusu:"]
-       [:div {:class "directory-tree-container"}
-        [directory-tree "/"]]
-       (when @file
-         [:p "Wybrany " ({:file "plik", :dir "katalog"} (:type @file)) ": " [:b (:file @file)]])
-       [:p "Nazwa korpusu: " [:input {:type "text", :value @name, :on-change (dispatch-value :set-new-corpus-name)}]]
-       [:div {:class "button-container"}
-        [:button {:on-click #(dispatch [:create-corpus])} "Utwórz korpus"]]])))
+    [:div {:class "corpora-creator"}
+     [:h2 "Nowy korpus"]
+     [:p "Wybierz plik CSV z metadanymi lub katalog korpusu:"]
+     [:div {:class "directory-tree-container"}
+      [directory-tree "/"]]
+     (when @file
+       [:p "Wybrany " ({:file "plik", :dir "katalog"} (:type @file)) ": " [:b (:file @file)]])
+     [:p "Nazwa korpusu: " [:input {:type "text", :value @name, :on-change (dispatch-value :set-new-corpus-name)}]]
+     [:div {:class "button-container"}
+      [:button {:on-click #(dispatch [:create-corpus])} "Utwórz korpus"]]]))
 
 (defn corpora-list []
   (table :corpora-table
@@ -119,13 +128,12 @@
 (defn corpus-selector []
   (let [current-corpus (subscribe [:current-corpus])
         corpora (subscribe [:corpora-table])]
-    (fn render-corpus-selector []
-      [:select {:class "corpus-selector", :on-change (dispatch-value :switch-corpus), :value @current-corpus}
-       (if-not @current-corpus
-         [:option "[Wybierz korpus]"])
-       (doall
-        (for [[id name _] (:data @corpora)]
-          [:option {:key name, :value id} name]))])))
+    [:select {:class "corpus-selector", :on-change (dispatch-value :switch-corpus), :value (or @current-corpus "__empty__")}
+     (if-not @current-corpus
+       [:option {:value "__empty__"} "[Wybierz korpus]"])
+     (doall
+      (for [[id name _] (:data @corpora)]
+        [:option {:key name, :value id} name]))]))
 
 (defn corpora []
   [:div {:class "corpora"}

@@ -1,41 +1,41 @@
 (ns smyrna.freq
-  (:require [re-frame.core :as re-frame :refer [register-handler path register-sub dispatch subscribe]]
+  (:require [re-frame.core :as re-frame :refer [reg-event-db reg-event-fx reg-sub dispatch subscribe]]
             [reagent.core :as reagent]
             [smyrna.api :as api]
             [smyrna.table :refer [table]]
             [smyrna.task :refer [spinner]]
-            [smyrna.utils :refer [register-accessors register-getter dispatch-value area-selector]]))
+            [smyrna.utils :refer [reg-accessors reg-getters dispatch-value area-selector]]))
 
-(register-accessors :frequency-list-area)
-(register-getter :frequency-list-table)
-(register-getter :frequency-list-state)
+(reg-accessors :frequency-list-area)
+(reg-getters :frequency-list-table :frequency-list-state)
 
-(register-handler :set-frequency-list
-                  (fn [state [_ data]]
-                    (-> state
-                        (assoc :frequency-list-state :displaying)
-                        (assoc-in [:frequency-list-table :data] data))))
+(reg-event-db
+ :set-frequency-list
+ (fn [db [_ data]]
+   (-> db
+       (assoc :frequency-list-state :displaying)
+       (assoc-in [:frequency-list-table :data] data))))
 
-(register-handler :update-frequency-list
-                  (fn [state _]
-                    (api/call "frequency-list" {:context (:frequency-list-area state)
-                                                :corpus (:current-corpus state)}
-                              #(dispatch [:set-frequency-list %]))
-                    (assoc state :frequency-list-state :in-progress)))
+(reg-event-fx
+ :update-frequency-list
+ (fn [{db :db} _]
+   {:api ["frequency-list"
+          {:context (:frequency-list-area db)
+           :corpus (:current-corpus db)}
+          :set-frequency-list]
+    :db (assoc db :frequency-list-state :in-progress)}))
 
 (defn freq-table []
   (let [state (subscribe [:frequency-list-state])]
-    (fn render-freq-table []
-      (condp = @state
-        :in-progress [spinner "Trwa generowanie listy frekwencyjnej..."]
-        :displaying (table :frequency-list-table :height 600)
-        nil))))
+    (condp = @state
+      :in-progress [spinner "Trwa generowanie listy frekwencyjnej..."]
+      :displaying (table :frequency-list-table :height 600)
+      nil)))
 
 (defn downloader []
   (let [corpus (subscribe [:current-corpus])
         frequency-list-area (subscribe [:frequency-list-area])]
-    (fn render-downloader []
-      [:p [:a {:href (str "/frequency-list/" @corpus "/" @frequency-list-area)} "Pobierz jako CSV"]])))
+    [:p [:a {:href (str "/frequency-list/" @corpus "/" @frequency-list-area)} "Pobierz jako CSV"]]))
 
 (defn frequency-lists []
   [:div

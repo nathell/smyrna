@@ -56,11 +56,13 @@
                                   [org.clojure/clojurescript "1.9.293"
                                    :exclusions [org.clojure/clojure org.clojure/tools.reader]]
                                   [org.clojure/tools.nrepl "0.2.12"]
+                                  [binaryage/devtools "0.9.0"]
                                   [com.cemerick/piggieback "0.2.1"]]
                    :source-paths ["env/dev/clj"]
                    :env {:dev true}
                    :cljsbuild {:builds {:app {:source-paths ["env/dev/cljs"]
                                               :compiler {:main "smyrna.dev"
+                                                         :preloads [devtools.preload]
                                                          :source-map true}}}}}
              :uberjar {:hooks [minify-assets.plugin/hooks]
                        :source-paths ["env/prod/clj"]

@@ -1,13 +1,11 @@
 (ns smyrna.wordcloud
-  (:require-macros [reagent.ratom :refer [reaction]])
   (:require [reagent.core :as reagent]
-            [re-frame.core :as re-frame :refer [register-handler path register-sub dispatch dispatch-sync subscribe]]
-            [smyrna.api :as api]
-            [smyrna.utils :refer [register-accessors dispatch-value area-selector]]
+            [re-frame.core :as re-frame :refer [reg-event-fx dispatch subscribe]]
+            [smyrna.utils :refer [reg-accessors area-selector]]
             [smyrna.task :refer [spinner]]
             cljsjs.d3))
 
-(register-accessors :wordcloud-area :wordcloud-data)
+(reg-accessors :wordcloud-area :wordcloud-data)
 
 (defn wc-size []
   (let [el (aget (js/document.getElementsByClassName "wordcloud") 0)]
@@ -56,10 +54,13 @@
         (.on "end" draw)
         (.start))))
 
-(register-handler :update-wordcloud
-                  (fn [state _]
-                    (api/call "compare-contexts" [(:wordcloud-area state) "Cały korpus" (:current-corpus state)] #(dispatch [:set-wordcloud-data %]))
-                    (assoc state :wordcloud-data :in-progress)))
+(reg-event-fx
+ :update-wordcloud
+ (fn [{db :db} _]
+   {:api ["compare-contexts"
+          [(:wordcloud-area db) "Cały korpus" (:current-corpus db)]
+          :set-wordcloud-data]
+    :db (assoc db :wordcloud-data :in-progress)}))
 
 (defn displayer-render [data]
   (identity @data)
@@ -73,10 +74,9 @@
 
 (defn displayer []
   (let [data (subscribe [:wordcloud-data])]
-    (fn render-displayer []
-      (if (= @data :in-progress)
-        [spinner "Trwa generowanie chmury słów..."]
-        [actual-displayer]))))
+    (if (= @data :in-progress)
+      [spinner "Trwa generowanie chmury słów..."]
+      [actual-displayer])))
 
 (defn wordcloud []
   [:div {:class "wordcloud"}
