@@ -70,6 +70,9 @@
                        :env {:production true}
                        :aot :all
                        :omit-source true
+                       :uberjar-exclusions [#"goog" #"externs.zip" #"LICENSE" #"README.md" #"AUTHORS" #"re-frame"
+                                            #"reagent" #"^pretty" #"leiningen.*" #"\.java" #"\.cljs" #"^css"
+                                            #"^cognitect" #"^cljs" #"^com/cognitect" #"\.clj$"]
                        :cljsbuild {:jar true
                                    :builds {:app
                                             {:source-paths ["env/prod/cljs"]
