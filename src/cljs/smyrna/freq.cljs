@@ -34,8 +34,10 @@
 
 (defn downloader []
   (let [corpus (subscribe [:current-corpus])
-        frequency-list-area (subscribe [:frequency-list-area])]
-    [:p [:a {:href (str "/frequency-list/" @corpus "/" @frequency-list-area)} "Pobierz jako CSV"]]))
+        frequency-list-area (subscribe [:frequency-list-area])
+        state (subscribe [:frequency-list-state])]
+    (when (= @state :displaying)
+      [:p [:a {:href (str "/frequency-list/" @corpus "/" @frequency-list-area)} "Pobierz jako CSV"]])))
 
 (defn frequency-lists []
   [:div

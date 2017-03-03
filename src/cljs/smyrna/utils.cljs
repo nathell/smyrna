@@ -42,6 +42,6 @@
   ([dispatcher nil-name]
    (let [contexts (subscribe [:contexts])]
      (into [:select {:on-change (dispatch-value dispatcher)}
-            [:option nil-name]]
+            [:option {:value nil-name} nil-name]]
            (for [[opt _] @contexts]
              [:option {:value opt} opt])))))

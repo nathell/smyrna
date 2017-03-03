@@ -19,6 +19,7 @@
   {:tab 1,
    :document-tab 0,
    :document-filter {:page 0, :rows-per-page 10, :filters {}},
+   :frequency-list-area "Cały korpus",
    :frequency-list-table {:columns {:leksem {:title "Leksem", :width 300}
                                     :frekwencja {:title "Frekwencja", :width 200}}
                           :column-order [:leksem :frekwencja]

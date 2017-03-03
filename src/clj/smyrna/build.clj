@@ -1,6 +1,7 @@
 (ns smyrna.build
   (:require [clojure.data.csv :as csv]
             [clojure.java.io :as io]
+            [clojure.string :as string]
             [smyrna.html :as html]
             [smyrna.huffman :as huffman :refer [enumerate]]
             [smyrna.index :as index]
@@ -31,12 +32,19 @@
 
 (defn corpus-dir
   [metafile]
-  (-> metafile io/file .getCanonicalFile .getParent (str "/")))
+  (let [f (-> metafile io/file)]
+    (if (.isDirectory f)
+      (-> f .getCanonicalFile (str "/"))
+      (-> f .getCanonicalFile .getParent (str "/")))))
 
 (defn total-frequencies [metafile metadata]
   (let [prefix (corpus-dir metafile)
         num-documents (count metadata)
-        files (map #(str prefix (:file %)) metadata)]
+        files (map #(let [f (io/file (:file %))]
+                      (if (.isAbsolute f)
+                        f
+                        (io/file prefix f)))
+                   metadata)]
     {:num-documents (count files)
      :freqs (apply merge-with + (map-indexed (fn [i f]
                                                (task/set-info (format "Trwa zliczanie częstości słów (wykonano %s%%)..." (int (* 100 (/ i num-documents)))))
@@ -93,11 +101,27 @@
   (task/set-info "Trwa inicjalizacja procesu kompresji...")
   (huffman/precompute-encoding vocab freq-vals))
 
+(defn read-metadata [metafile]
+  (let [f (io/file metafile)]
+    (if (.isDirectory f)
+      (let [files (filter #(and (.isFile %) (re-find #"\.html?$" (string/lower-case (.getName %))))
+                          (file-seq f))]
+        (for [f files]
+          {:plik (.getName f), :file (str f)}))
+      (read-csv-df f))))
+
+(defn read-metadata-table [metafile]
+  (let [f (io/file metafile)]
+    (if (.isDirectory f)
+      (into [["file" "plik"]]
+            (map (juxt :file :plik) (read-metadata f)))
+      (csv/read-csv metafile))))
+
 (defn build-corpus [metafile outdir]
   (task/set-info "Trwa wczytywanie metadanych...")
   (io/make-parents (str outdir "/a"))
   (let [prefix (corpus-dir metafile)
-        metadata (read-csv-df metafile)
+        metadata (read-metadata metafile)
         {:keys [num-documents freqs]} (total-frequencies metafile metadata)
         vocab (save-dicts outdir (keys freqs))
         num-words (count (take-while #(= (first %) :word) vocab))
@@ -113,14 +137,15 @@
       (with-open [f (io/writer (java.util.zip.GZIPOutputStream. (java.io.FileOutputStream. (str outdir "/meta.edn.gz"))))
                   f2 (io/writer (java.util.zip.GZIPOutputStream. (java.io.FileOutputStream. (str outdir "/paths.edn.gz"))))]
         (binding [*out* f]
-          (prn (meta/as-dictionaries (meta/drop-columns #{"file"} (csv/read-csv (io/reader metafile))))))
+          (prn (meta/as-dictionaries (meta/drop-columns #{"file"} (read-metadata-table metafile)))))
         (binding [*out* f2]
           (prn (mapv :file metadata))))
       (task/set-info "Trwa budowanie obrazu korpusu...")
       (with-open [corpus-image (bitstream/file-bit-sink (str outdir "/image"))
                   offset-file (java.io.DataOutputStream. (io/output-stream (str outdir "/offset")))]
         (let [inv (reduce (fn [inv [i entry]]
-                            (let [f (str prefix (:file entry))
+                            (let [f (io/file (:file entry))
+                                  f (if (.isAbsolute f) f (io/file prefix f))
                                   tokens (-> f tagsoup/parse html/serialize-tree)]
                               (huffman/do-encode tokens corpus-image codes lengths index)
                               (.writeInt offset-file (.position corpus-image))

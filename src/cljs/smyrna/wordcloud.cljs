@@ -81,5 +81,8 @@
 (defn wordcloud []
   [:div {:class "wordcloud"}
    [area-selector :set-wordcloud-area "[Wybierz obszar]"]
-   [:button {:on-click #(dispatch [:update-wordcloud])} "Pokaż"]
+   [:button {:on-click #(dispatch [:update-wordcloud])
+             :disabled (let [area @(subscribe [:wordcloud-area])]
+                         (or (nil? area) (= area "[Wybierz obszar]")))}
+    "Pokaż"]
    [displayer]])
