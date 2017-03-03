@@ -1,5 +1,6 @@
 (ns smyrna.document-table
   (:require [clojure.walk :refer [postwalk]]
+            [clojure.string :as string]
             [reagent.core :as reagent :refer [atom]]
             [re-frame.core :as re-frame :refer [reg-event-db reg-event-fx reg-sub dispatch dispatch-sync subscribe]]
             [smyrna.api :as api]
@@ -21,7 +22,7 @@
   (toggle (or s (set (range n))) el))
 
 (reg-accessors :new-area :browsed-document :browsed-document-num :document-tab :advanced)
-(reg-getters :document-filter :metadata :contexts :document-table)
+(reg-getters :document-filter :current-filter :metadata :contexts :document-table)
 (reg-sub :vignette #(-> %1 :custom :vignette))
 (reg-sub :phrase #(-> %1 :document-filter :phrase))
 
@@ -87,7 +88,8 @@
    {:api ["get-documents"
           (assoc (filter-params (:document-filter db))
                  :corpus (:current-corpus db))
-          :set-documents]}))
+          :set-documents]
+    :db (assoc db :current-filter (:document-filter db))}))
 
 (reg-event-fx
  :reset-filters
@@ -147,13 +149,39 @@
         [:button {:on-click #(dispatch [:set-modal area-creator])} "Utwórz obszar"]
         [:button {:on-click #(dispatch [:reset-filters])} "Resetuj filtry"]])]))
 
+(defn document-summary
+  []
+  (let [{:keys [phrase within filters page]} @(subscribe [:current-filter])]
+    [:p.summary
+
+     (if (seq phrase)
+       [:span "Dokumenty zawierające frazę „" [:b phrase] "”"]
+       "Wszystkie dokumenty")
+     " w "
+     (if (or (nil? within) (= within "Cały korpus"))
+       "całym korpusie"
+       [:span "obszarze " [:b [:i within]]])
+     [:br]
+     "Strona " (inc page)
+     [:br]
+     (if (seq filters)
+       [:span
+        "Aktywne filtry: " [:i (string/join ", " (keys filters))]
+        " ("
+        [:a {:href "#" :on-click #(dispatch [:reset-filters])} "resetuj"]
+        ")"]
+       "Brak aktywnych filtrów")
+
+     ]))
+
 (defn pagination []
   (let [document-filter (subscribe [:document-filter])]
-    [:div {:class "pagination"}
-     (if (> (:page @document-filter) 0)
-       [:a {:class "prev", :href "#", :on-click #(dispatch [:move-page -1])} "Poprzednie"]
-       [:span {:class "disabled link"} "Poprzednie"])
-     [:a {:class "next", :href "#", :on-click #(dispatch [:move-page 1])} "Następne"]]))
+    [:div {:class "pagination", :style {:width @(subscribe [:table-width])}}
+     [:button (if (> (:page @document-filter) 0)
+                {:on-click #(dispatch [:move-page -1])}
+                {:disabled true}) "<<"]
+     [document-summary]
+     [:button {:on-click #(dispatch [:move-page 1])} ">>"]]))
 
 (defn top-overlay []
   [:div
@@ -241,24 +269,35 @@
       (.add (.-classList (matches nxt)) "selected")
       (.scrollIntoView (matches nxt)))))
 
-(defn advance-document-button [label delta]
+(defn advance-document-button [label title delta]
   (let [browsed-document-num (subscribe [:browsed-document-num])]
-    [:button {:on-click #(dispatch [:browse-num (+ @browsed-document-num delta)])} label]))
+    [:button {:title title
+              :on-click #(dispatch [:browse-num (+ @browsed-document-num delta)])}
+     label]))
+
+(reg-sub :meta-keys
+         #(subscribe [:document-table])
+         #(map (comp keyword first) (:metadata %1)))
 
 (defn meta-item [key]
-  (let [document-table (subscribe [:document-table])
+  (let [meta-keys (subscribe [:meta-keys])
         browsed-document (subscribe [:browsed-document])]
     (when-let [doc @browsed-document]
-      (let [meta-map (zipmap (map (comp keyword first) (:metadata @document-table)) (rest doc))]
+      (let [meta-map (zipmap @meta-keys (rest doc))]
         [:span (meta-map key)]))))
 
 (defn vignette
   []
-  (let [v (subscribe [:vignette])]
-    (postwalk #(if (and (keyword? %) (= (namespace %) "meta"))
-                 [meta-item (keyword (name %))]
-                 %)
-              @v)))
+  (let [v @(subscribe [:vignette])]
+    (if v
+      (postwalk #(if (and (keyword? %) (= (namespace %) "meta"))
+                   [meta-item (keyword (name %))]
+                   %)
+                v)
+      [:div.vignette
+       [:table
+        (for [k @(subscribe [:meta-keys])]
+          [:tr [:th k] [:td [meta-item k]]])]])))
 
 (defn document-browser []
   (let [browsed-document (subscribe [:browsed-document])
@@ -269,14 +308,14 @@
        [:tbody
         [:tr {:class "navigation"}
          [:td
-          [advance-document-button "<<" -1]
+          [advance-document-button "<<" "Poprzedni dokument" -1]
           (when (:phrase @document-filter)
-            [:button {:on-click #(advance-match -1)} "<"])]
+            [:button {:on-click #(advance-match -1) :title "Poprzednie wystąpienie"} "<"])]
          [:td [vignette]]
          [:td
           (when (:phrase @document-filter)
-            [:button {:on-click #(advance-match 1)}  ">"])
-          [advance-document-button ">>" 1]]]
+            [:button {:on-click #(advance-match 1) :title "Następne wystąpienie"}  ">"])
+          [advance-document-button ">>" "Następny dokument" 1]]]
         [:tr [:td {:col-span 3}
               [:div
                [:iframe {:id "browsed"

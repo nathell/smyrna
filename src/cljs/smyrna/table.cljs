@@ -1,5 +1,5 @@
 (ns smyrna.table
-  (:require [re-frame.core :as re-frame :refer [reg-event-db dispatch subscribe]]
+  (:require [re-frame.core :as re-frame :refer [reg-event-db reg-sub dispatch subscribe]]
             [reagent.core :as reagent]
             cljsjs.fixed-data-table))
 
@@ -47,3 +47,8 @@
                          (let [{:strs [columnKey rowIndex]} (js->clj args)]
                            (reagent/as-element [Cell (cell-renderer orig rowIndex i)])))}]))
           shown-columns)]))
+
+(reg-sub :table-width
+         #(subscribe [:document-table])
+         #(when-let [cols (-> %1 :columns)]
+            (->> cols vals (map :width) (apply +))))

@@ -257,16 +257,16 @@ button, input, select {
     height: 100%;
 }
 
-.document tr.navigation td:nth-child(1) {
+.document tr.navigation > td:nth-child(1) {
     text-align: left;
     min-width: 100px;
 }
 
-.document tr.navigation td:nth-child(2) {
+.document tr.navigation > td:nth-child(2) {
     text-align: center;
 }
 
-.document tr.navigation td:nth-child(3) {
+.document tr.navigation > td:nth-child(3) {
     min-width: 100px;
     text-align: right;
 }
@@ -312,5 +312,23 @@ ul.tree li.file {
 }
 
 .spinner p {
+    text-align: center;
+}
+
+.vignette {
+    column-count: 2;
+    -moz-column-count: 2;
+    -webkit-column-count: 2;
+}
+
+.vignette table {
+    margin: 0 auto;
+}
+
+.vignette table tr th, .vignette table tr td {
+    text-align: left;
+}
+
+.summary {
     text-align: center;
 }
