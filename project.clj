@@ -1,4 +1,4 @@
-(defproject smyrna "0.3.0-SNAPSHOT"
+(defproject smyrna "0.3.0"
   :description "A lightweight concordancer for Polish."
   :url "http://smyrna.danieljanus.pl"
   :license {:name "MIT"
