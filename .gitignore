@@ -2,6 +2,7 @@
 .nrepl-port
 target
 resources/public/css
+doc/index.html
 site.min.css
 *~
 #*
