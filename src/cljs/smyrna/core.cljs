@@ -1,6 +1,6 @@
 (ns smyrna.core
   (:require [re-frame.core :as re-frame :refer [reg-event-fx reg-event-db dispatch dispatch-sync subscribe]]
-            [reagent.core :as reagent]
+            [reagent.dom :as rdom]
             [smyrna.task :as task]
             [smyrna.utils :refer [reg-accessors]]
             [smyrna.corpora :refer [corpora] :as corpora]
@@ -88,7 +88,7 @@
 
 (defn mount-root []
   (dispatch-sync [:initialize])
-  (reagent/render [root] (.getElementById js/document "app")))
+  (rdom/render [root] (.getElementById js/document "app")))
 
 (defn init! []
   (mount-root))

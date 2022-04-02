@@ -10,8 +10,7 @@
             [smyrna.fsa :as fsa]
             [smyrna.task :as task]
             [smyrna.corpus :refer [corpora-path]]
-            [taoensso.timbre :refer [infof]]
-            [pl.danieljanus.tagsoup :as tagsoup])
+            [taoensso.timbre :refer [infof]])
   (:import [smyrna.bitstream IBitSink]
            [java.util Arrays]))
 
@@ -48,7 +47,7 @@
     {:num-documents (count files)
      :freqs (apply merge-with + (map-indexed (fn [i f]
                                                (task/set-info (format "Trwa zliczanie częstości słów (wykonano %s%%)..." (int (* 100 (/ i num-documents)))))
-                                               (-> f tagsoup/parse html/serialize-tree vec frequencies))
+                                               (-> f html/parse html/serialize-tree vec frequencies))
                                              files))}))
 
 (defn save-dicts [outdir vocab]
@@ -146,7 +145,7 @@
         (let [inv (reduce (fn [inv [i entry]]
                             (let [f (io/file (:file entry))
                                   f (if (.isAbsolute f) f (io/file prefix f))
-                                  tokens (-> f tagsoup/parse html/serialize-tree)]
+                                  tokens (-> f html/parse html/serialize-tree)]
                               (huffman/do-encode tokens corpus-image codes lengths index)
                               (.writeInt offset-file (.position corpus-image))
                               (let [words (filter #(< % num-words) (map index tokens))

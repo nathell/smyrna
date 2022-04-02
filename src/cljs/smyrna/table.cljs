@@ -1,11 +1,11 @@
 (ns smyrna.table
   (:require [re-frame.core :as re-frame :refer [reg-event-db reg-sub dispatch subscribe]]
             [reagent.core :as reagent]
-            cljsjs.fixed-data-table))
+            ["fixed-data-table-2" :as table]))
 
-(def Table (reagent/adapt-react-class js/FixedDataTable.Table))
-(def Column (reagent/adapt-react-class js/FixedDataTable.Column))
-(def Cell (reagent/adapt-react-class js/FixedDataTable.Cell))
+(def Table (reagent/adapt-react-class table/Table))
+(def Column (reagent/adapt-react-class table/Column))
+(def Cell (reagent/adapt-react-class table/Cell))
 
 (defn default-cell-renderer
   [data row col]

@@ -8,3 +8,7 @@ site.min.css
 #*
 *.zip
 out
+resources/public/js
+.shadow-cljs
+.cpcache
+node_modules

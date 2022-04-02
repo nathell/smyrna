@@ -1,6 +1,8 @@
 (ns smyrna.html
-  (:require [pl.danieljanus.tagsoup :as tagsoup]
-            [clojure.string :as string]))
+  (:require [clojure.string :as string]))
+
+(defn parse [html] ; placeholder
+  {})
 
 (defn tokenize-subparts [text]
   (interpose :nospace (map #(vector :word %) (re-seq #"[\pL0-9]+|[^\pL0-9]+" text))))
