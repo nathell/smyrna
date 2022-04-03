@@ -8,22 +8,22 @@ Smyrna is a concordancer and statistical analyzer for metadata-rich corpora in P
 
 ## Hacking
 
-You’ll need a snapshot jar of the not-yet-released [Polelum]. Clone the Polelum repo and do a `lein install` there.
+Prerequisites: GNU make, JVM, Clojure ([cli-tools]), yarn (classic 1.x), sassc. Smyrna itself no longer uses Leiningen.
 
-To build the Smyrna uberjar, do:
+In addition, you’ll need a snapshot jar of the not-yet-released [Polelum]. Clone the Polelum repo and do a `lein install` there.
 
-    lein less4j once
-    lein uberjar
+To start a development environment, do:
 
-To start a development environment, first run the ClojureScript and LESS watchdogs:
+    make css # this builds CSS
+    shadow-cljs watch app
 
-    lein less4j auto
-    lein cljsbuild auto
+Now launch a REPL (`clj`, `M-x cider-jack-in` from within Emacs or equivalent) and evaluate `(start-server)`.
 
-Now launch a REPL (`lein repl`, `M-x cider-jack-in` from within Emacs or equivalent) and evaluate `(start-server)`.
+To build an uberjar, just do `make clean uberjar`.
 
  [CZYTAJ.md]: ./CZYTAJ.md
  [Polelum]: https://github.com/nathell/polelum
+ [cli-tools]: https://clojure.org/guides/deps_and_cli
 
 ## License
 
