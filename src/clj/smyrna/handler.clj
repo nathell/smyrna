@@ -8,7 +8,7 @@
             [smyrna.task :as task]
             [clojure.edn :as edn]
             [smyrna.meta :as meta]
-            [compojure.core :refer [GET POST defroutes]]
+            [compojure.core :refer [ANY GET POST defroutes]]
             [clojure.java.io :as io]
             [clojure.data.csv :as csv]
             [taoensso.timbre :refer [infof]]
@@ -119,6 +119,8 @@
        (files path))
   (api create-corpus {:keys [name file]}
        (task/launch (build/build name file))
-       "OK"))
+       "OK")
+  (ANY "*" []
+       {:status 404, :body "Not found"}))
 
 (def app (wrap-middleware #'routes))
