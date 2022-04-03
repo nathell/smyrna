@@ -3,7 +3,8 @@
             [re-frame.core :as re-frame :refer [reg-event-fx dispatch subscribe]]
             [smyrna.utils :refer [reg-accessors area-selector]]
             [smyrna.task :refer [spinner]]
-            ["d3" :as d3]))
+            ["d3" :as d3]
+            ["d3-cloud" :as cloud]))
 
 (reg-accessors :wordcloud-area :wordcloud-data)
 
@@ -43,8 +44,7 @@
 
 (defn layout [data]
   (let [w (clj->js (for [[word count] (sizes @data)] {:text word, :size count}))]
-    (-> d3/layout
-        (.cloud)
+    (-> (cloud)
         (.size (clj->js (wc-size)))
         (.words w)
         (.padding 5)

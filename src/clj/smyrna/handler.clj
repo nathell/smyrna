@@ -39,9 +39,7 @@
      [:div#app
       [:div {:style "display: flex; height: 100%;"}
        [:h1 {:style "margin: auto;"} "Trwa uruchamianie Smyrny, proszę czekać..."]]]
-     (include-js "js/app.js")
-     (include-js "js/d3.layout.cloud.js")
-    ]))
+     (include-js "js/app.js")]))
 
 (defn edn-response-raw
   ([body] (edn-response-raw {} body))
