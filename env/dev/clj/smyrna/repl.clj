@@ -1,9 +1,8 @@
 (ns smyrna.repl
-  (:require cemerick.piggieback
-            weasel.repl.websocket)
-  (:use smyrna.handler
-        ring.server.standalone
-        [ring.middleware file-info file]))
+  (:require [ring.middleware.file :refer [wrap-file]]
+            [ring.middleware.file-info :refer [wrap-file-info]]
+            [ring.server.standalone :refer [serve]]
+            [smyrna.handler :refer [app]]))
 
 (defonce server (atom nil))
 
@@ -22,10 +21,6 @@
                     :auto-reload? true
                     :join? false}))
     (println (str "You can view the site at http://localhost:" port))))
-
-(defn weasel []
-  (cemerick.piggieback/cljs-repl
-   (weasel.repl.websocket/repl-env :ip "0.0.0.0" :port 9001)))
 
 (defn stop-server []
   (.stop @server)

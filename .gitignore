@@ -12,3 +12,4 @@ resources/public/js
 .shadow-cljs
 .cpcache
 node_modules
+classes
