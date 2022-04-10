@@ -1,8 +1,9 @@
 (ns smyrna.html
-  (:require [clojure.string :as string]))
+  (:require [clojure.string :as string]
+            [reaver]))
 
-(defn parse [html] ; placeholder
-  {})
+(defn parse [html]
+  (-> html slurp reaver/parse reaver/edn :content first))
 
 (defn tokenize-subparts [text]
   (interpose :nospace (map #(vector :word %) (re-seq #"[\pL0-9]+|[^\pL0-9]+" text))))
@@ -16,6 +17,6 @@
 (defn serialize-tree [tree]
   (cond
    (string? tree) (tokenize tree)
-   (vector? tree)
-   (let [[tag attrs & data] tree]
-     (concat [[:tag (name tag)]] (serialize-attrs attrs) (mapcat serialize-tree data) [:end]))))
+   (map? tree)
+   (let [{:keys [tag attrs content]} tree]
+     (concat [[:tag (name tag)]] (serialize-attrs attrs) (mapcat serialize-tree content) [:end]))))
