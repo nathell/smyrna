@@ -2,6 +2,7 @@
   (:require [clojure.data.csv :as csv]
             [clojure.java.io :as io]
             [clojure.string :as string]
+            [polelum.core :as polelum]
             [smyrna.html :as html]
             [smyrna.huffman :as huffman :refer [enumerate]]
             [smyrna.index :as index]

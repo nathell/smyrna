@@ -1,16 +1,16 @@
 (ns smyrna.corpus
-  (:require [nio.core :as nio]
-            [clojure.java.io :as io]
-            [clojure.data.csv :as csv]
+  (:require [clojure.data.csv :as csv]
             [clojure.edn :as edn]
+            [clojure.java.io :as io]
             [clojure.string :as string]
+            [nio.core :as nio]
+            [polelum.core :as polelum]
             [smyrna.bitstream :as bitstream]
             [smyrna.container :as container]
-            [smyrna.huffman :as huffman :refer [enumerate]]
             [smyrna.fsa :as fsa]
+            [smyrna.huffman :as huffman :refer [enumerate]]
             [smyrna.index :as index]
-            [smyrna.meta :as meta]
-            polelum)
+            [smyrna.meta :as meta])
   (:import [java.nio ByteBuffer IntBuffer]
            [java.util Arrays Collections]
            [java.util.zip GZIPInputStream]
