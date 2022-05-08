@@ -3,7 +3,7 @@
             [reaver]))
 
 (defn parse [html]
-  (-> html slurp reaver/parse reaver/edn :content first))
+  (-> html slurp reaver/parse (reaver/select "html") first reaver/edn))
 
 (defn tokenize-subparts [text]
   (interpose :nospace (map #(vector :word %) (re-seq #"[\pL0-9]+|[^\pL0-9]+" text))))
