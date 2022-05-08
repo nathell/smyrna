@@ -37,14 +37,15 @@
       (-> f .getCanonicalFile (str "/"))
       (-> f .getCanonicalFile .getParent (str "/")))))
 
-(defn total-frequencies [metafile metadata]
-  (let [prefix (corpus-dir metafile)
-        num-documents (count metadata)
-        files (map #(let [f (io/file (:file %))]
-                      (if (.isAbsolute f)
-                        f
-                        (io/file prefix f)))
-                   metadata)]
+(defn absolute-file [prefix f]
+  (let [f (io/file f)]
+    (if (.isAbsolute f)
+      f
+      (io/file prefix f))))
+
+(defn total-frequencies [metadata]
+  (let [num-documents (count metadata)
+        files (map :file metadata)]
     {:num-documents (count files)
      :freqs (apply merge-with + (map-indexed (fn [i f]
                                                (task/set-info (format "Trwa zliczanie częstości słów (wykonano %s%%)..." (int (* 100 (/ i num-documents)))))
@@ -102,13 +103,15 @@
   (huffman/precompute-encoding vocab freq-vals))
 
 (defn read-metadata [metafile]
-  (let [f (io/file metafile)]
+  (let [f (io/file metafile)
+        prefix (corpus-dir metafile)]
     (if (.isDirectory f)
       (let [files (filter #(and (.isFile %) (re-find #"\.html?$" (string/lower-case (.getName %))))
                           (file-seq f))]
         (for [f files]
-          {:plik (.getName f), :file (str f)}))
-      (read-csv-df f))))
+          {:plik (.getName f), :file (absolute-file prefix f)}))
+      (->> (read-csv-df f)
+           (map #(update % :file (partial absolute-file prefix)))))))
 
 (defn read-metadata-table [metafile]
   (let [f (io/file metafile)]
@@ -122,7 +125,7 @@
   (io/make-parents (str outdir "/a"))
   (let [prefix (corpus-dir metafile)
         metadata (read-metadata metafile)
-        {:keys [num-documents freqs]} (total-frequencies metafile metadata)
+        {:keys [num-documents freqs]} (total-frequencies metadata)
         vocab (save-dicts outdir (keys freqs))
         num-words (count (take-while #(= (first %) :word) vocab))
         freq-vals (map freqs vocab)
@@ -139,14 +142,12 @@
         (binding [*out* f]
           (prn (meta/as-dictionaries (meta/drop-columns #{"file"} (read-metadata-table metafile)))))
         (binding [*out* f2]
-          (prn (mapv :file metadata))))
+          (prn (mapv (comp str :file) metadata))))
       (task/set-info "Trwa budowanie obrazu korpusu...")
       (with-open [corpus-image (bitstream/file-bit-sink (str outdir "/image"))
                   offset-file (java.io.DataOutputStream. (io/output-stream (str outdir "/offset")))]
         (let [inv (reduce (fn [inv [i entry]]
-                            (let [f (io/file (:file entry))
-                                  f (if (.isAbsolute f) f (io/file prefix f))
-                                  tokens (-> f html/parse html/serialize-tree)]
+                            (let [tokens (-> entry :file html/parse html/serialize-tree)]
                               (huffman/do-encode tokens corpus-image codes lengths index)
                               (.writeInt offset-file (.position corpus-image))
                               (let [words (filter #(< % num-words) (map index tokens))
